@@ -4,7 +4,7 @@ import LogIn from '@/components/LogIn.vue';
 import { reactive } from 'vue';
 import RegiSter from '@/components/RegiSter.vue';
 const data = reactive({
-  isShow:'register'
+  isShow:'login'
 })
 const handleT = (mess) =>{
     data.isShow = mess

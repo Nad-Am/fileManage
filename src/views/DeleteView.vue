@@ -1,159 +1,12 @@
 <script setup>
-import { watch, ref, reactive } from 'vue';
-const detail = [
-    {
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },
-    {
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },
-    {
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },
-    {
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },
-    {
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },
-    {
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },{
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },
-    {
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },
-    {
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },{
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },
-    {
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },
-    {
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },
-    {
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },
-    {
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },{
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },
-    {
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },
-    {
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },
-    {
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },
-    {
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },{
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },
-    {
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },
-    {
-        name:'nask',
-        type: 'pos',
-        size:123,
-        deleteTime: '2024.12.01',
-        expirationData:10
-    },
-]
+import { watch, ref, reactive, onMounted} from 'vue';
+import { DoAxios,DoAxiosWithErro } from '@/api';
+import { ElMessageBox } from 'element-plus';
+import { useRouter } from 'vue-router';
+import { treeEmits } from 'element-plus/es/components/tree-v2/src/virtual-tree';
 
-
+const detail = reactive([]);
+const router = useRouter();
 const defdetail = reactive(detail.map(item => ({...item,check:false,hasmous:false})));
 const checkAll = ref(false);
 const indeter = ref(false);
@@ -171,9 +24,43 @@ const handleAll = () => {
     })
 }
 
+const deleteEnd = async (e) => {
+    console.log(e);
+}
+
+const handleRefesh = async (e) => {
+    const fordata =new FormData();
+    fordata.append('fileId',e.id);
+    const respon = await DoAxios('/api/files/recycle/restore','put',fordata,true);
+    console.log(respon);
+}
+
 watch(defdetail,(newvalue) => {
     checkAll.value = newvalue.every(i => i.check);
     indeter.value = newvalue.some(i => i.check) && !checkAll.value;
+})
+
+onMounted(async () => {
+    try{
+        const respon = await DoAxios('/api/files/list','post',{
+            id:0,
+            isRoot:true,
+            pageNo:1,
+            pageSize:10,
+            isAsc:true,
+            isDeleted:true
+        },true)
+        detail.splice(0, detail.length, ...respon.data.list);
+        console.log(detail);
+    } catch(e) {
+        ElMessageBox.alert('登录过期请重新登录', e, {
+        confirmButtonText: '确定',
+        }).then(() => {
+        router.push('/');
+        });
+    } finally {
+        defdetail.splice(0,defdetail.length,...detail.map(item => ({...item,check:false,hasmous:false})))
+    }
 })
 
 </script>
@@ -196,8 +83,7 @@ watch(defdetail,(newvalue) => {
                     ></el-checkbox>
                     文件
                 </el-col>
-                <el-col :span="4">大小</el-col>
-                <el-col :span="4">删除时间</el-col>
+                <el-col :span="6">删除时间</el-col>
                 <el-col :span="4">有效时间</el-col>
             </el-row>
             <div class="scol">
@@ -208,26 +94,25 @@ watch(defdetail,(newvalue) => {
                  @mouseenter="handleenter(item)"
                  @mouseleave="handleleave(item)"
                 >
-                    <el-col :span="8" class="name">
-                        <el-checkbox v-show="true" v-model="item.check" :value="item.name"></el-checkbox>
+                    <el-col style="min-width: 100px; overflow: hidden; text-overflow: ellipsis; flex-wrap: nowrap; text-wrap: nowrap;" :span="8" class="name">
+                        <el-checkbox  v-model="item.check" :value="item.name"></el-checkbox>
                         <el-icon color="yellow" size="25px"><WalletFilled /></el-icon>
                         {{ item.name }}
                     </el-col>
-                    <el-col v-show="!item.hasmous" :span="4">{{ item.size }}</el-col>
-                    <el-col v-show="!item.hasmous" :span="4">{{ item.deleteTime }}</el-col>
+                    <el-col v-show="!item.hasmous" :span="6">{{ item.updatedTime }}</el-col>
                     <el-col v-show="!item.hasmous" :span="4">{{ item.expirationData }}天</el-col>
-                    <el-col v-show="item.hasmous" :span="12" style="padding-left: 10%;">
+                    <el-col v-show="item.hasmous" :span="10" style="padding-left: 10%;">
                         <el-tooltip
                         effect="light"
                         content="还原"
                         >
-                            <el-icon style="margin: 10px; color: rgba(51, 191, 240); cursor: pointer;"><Refresh /></el-icon>
+                            <el-icon @click="handleRefesh(item)" style="margin: 10px; color: rgba(51, 191, 240); cursor: pointer;"><Refresh /></el-icon>
                         </el-tooltip>
                         <el-tooltip
                         effect="light"
                         content="彻底删除"
                         >
-                            <el-icon style="margin: 10px; color: rgba(51, 191, 240); cursor: pointer;"><Delete /></el-icon>
+                            <el-icon @click="deleteEnd(item.id)" style="margin: 10px; color: rgba(51, 191, 240); cursor: pointer;"><Delete /></el-icon>
                         </el-tooltip>
                     </el-col>
                 </el-row>

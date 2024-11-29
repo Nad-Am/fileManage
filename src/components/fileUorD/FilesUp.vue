@@ -16,7 +16,7 @@
 import { ref } from 'vue'
 import axios from 'axios'
 
-import { DoAxios } from '@/api';
+import { DoAxiosWithErro } from '@/api';
 
 const files = ref<File[]>([])
 const folderInput = ref<HTMLInputElement | null>(null)
@@ -32,14 +32,6 @@ const handleFolderChange = (event: Event) => {
   if (!fileList) return
   files.value = Array.from(fileList) // 存储文件列表
   uploadFiles()
-  // const formData = new FormData()
-  // files.value.forEach((file) => {
-  //   // 将文件路径和文件数据一起发送
-  //   formData.append('files', file, file.webkitRelativePath)
-  //   console.log(file,file.webkitRelativePath);
-  // })
-
-  // 清空文件选择框的内容
   const fileInput = event.target as HTMLInputElement
   fileInput.value = ''
 }
@@ -60,14 +52,7 @@ const uploadFiles = async () => {
   formData.append('parentId','');
 
   try {
-    const response = await axios.post('/api/files/upload', 
-      formData, {
-      headers: {
-
-        'Content-Type': 'multipart/form-data',
-        'sa-token-authorization': '9d22d89d-de74-431c-ba68-daad1e281503',
-      },
-    })
+    const response = await DoAxiosWithErro('/api/files/upload','post', formData,true)
     console.log('Upload success:', response.data)
 
     // const data = await DoAxios('/api/files/upload','post',{parentId: 'W6',files:formData},true);
@@ -84,6 +69,6 @@ const uploadFiles = async () => {
 
 <style scoped>
 .folder-upload {
-  margin: 20px;
+  margin: 5px;
 }
 </style>

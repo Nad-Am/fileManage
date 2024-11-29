@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { DoAxios } from "@/api";
+import { DoAxiosWithErro } from "@/api";
 export const useUserStore =  defineStore('user',{
     state:() => ({
         useTransitionFallthrough:null,
@@ -14,18 +14,15 @@ export const useUserStore =  defineStore('user',{
       // 3. 定义 actions
       actions: {
         async login(userData) {
-          try{
-              const data = await DoAxios('/api/users/login','post',userData,false);
+              const data = await DoAxiosWithErro('/api/users/login','post',userData,false);
               // console.log(data.tokenValue,data.data);
               this.userToken = data.data.tokenValue;
               localStorage.setItem('userToken', this.userToken);
-            
-          } catch(e) {
-            console.log("登录失败",e);
-          }
+              
         },
-        logout() {
+        async logout() {
           this.userInfo = null;
+          await DoAxiosWithErro('/api/users/logout','post',{},true);
           localStorage.removeItem('userToken');
           this.isLoggedIn = false;
         }

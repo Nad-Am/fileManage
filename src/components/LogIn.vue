@@ -1,3 +1,39 @@
+<script lang="ts" setup>
+import { useUserStore } from '@/stores/user';
+import { reactive, defineEmits, ref } from 'vue'
+import { useRouter } from 'vue-router';
+
+const Login = ref(null);
+const logining = ref(false);
+const router = useRouter();
+const userstor = useUserStore();
+
+// do not use same name with ref
+const form = reactive({
+  name: '',
+  password: undefined,
+})
+const emit = defineEmits(['turnLoR'])
+
+const handelturn = () => {
+  emit('turnLoR','register')
+}
+
+const handleLogin = async () => {
+  if(logining.value) return;
+  try{
+    const userInfo = {account:form.name,password:form.password};
+    logining.value = true;
+    await userstor.login(userInfo);
+    router.push('/home')
+  } catch(e) {
+    console.log(e);
+  } finally {
+    logining.value = false;
+  }
+  
+}
+</script>
 <template>
     <div class="login">
         <h3>登录</h3>
@@ -6,43 +42,18 @@
                 <el-input v-model="form.name" />
             </el-form-item>
             <el-form-item label="密码" prop="pass">
-                <el-input v-model="form.password" type="password" autocomplete="off" />
+                <el-input v-model="form.password" type="password" />
             </el-form-item>
-            <el-from-item class="button">
-                <el-button @click="handleLogin" class="sub" type="primary" :loading="false">
+            <div class="button">
+                <el-button :disabled="logining" @click="handleLogin" class="sub" type="primary" :loading="false">
                 Submit
                 </el-button>
-            </el-from-item>
+            </div>
         </el-form>
         <div class="turn">还没有账号？请前往<el-link @click="handelturn" class="link" type="primary">注册</el-link></div>
     </div>
   </template>
   
-  <script lang="ts" setup>
-  import { useUserStore } from '@/stores/user';
-import { reactive, defineEmits, ref } from 'vue'
-  
-  const Login = ref(null);
-  // do not use same name with ref
-  const form = reactive({
-    name: '',
-    password: undefined,
-  })
-  const emit = defineEmits(['turnLoR'])
-
-  const handelturn = () => {
-    emit('turnLoR','register')
-  }
-
-  const handleLogin = async () => {
-    const userInfo = {email:form.name,password:form.password};
-    const userstor = useUserStore();
-    await userstor.login(userInfo);
-    console.log(userstor.userToken);
-    
-  }
-
-  </script>
 
   <style lang="less" scoped>
   .login{
@@ -55,9 +66,9 @@ import { reactive, defineEmits, ref } from 'vue'
         text-align: center;
     }
     .button{
-    margin: 3rem 0;
-    display: flex;
-    justify-content: center;
+      width: 100%;
+      display: flex;
+      justify-content: center;
     }
     .sub{
         width:6rem;

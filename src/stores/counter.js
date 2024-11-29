@@ -1,12 +1,25 @@
-import { ref, computed } from 'vue'
+import { ref, reactive } from 'vue'
 import { defineStore } from 'pinia'
 
-export const useCounterStore = defineStore('counter', () => {
-  const count = ref(0)
-  const doubleCount = computed(() => count.value * 2)
-  function increment() {
-    count.value++
+export const useIdStore = defineStore('counter', () => {
+  const index = ref(0);
+  const Idstack = reactive([]);
+
+  const pushId = (newIdInfor) => {
+    Idstack.push(newIdInfor)
+    index.value = index.value + 1;
   }
 
-  return { count, doubleCount, increment }
+  const backword = () => {
+    if(index.value <= 0) return
+    Idstack.splice(index.value,1);
+    index.value = index.value - 1
+  }
+
+  const turnId = (id) => {
+    index.value = id;
+    Idstack.splice(id + 1,Idstack.length - id);
+  }
+  
+  return {index, Idstack, backword, pushId, turnId}
 })

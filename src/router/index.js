@@ -22,6 +22,11 @@ const router = createRouter({
           path:'delete',
           name: 'delete',
           component: () => import('@/views/DeleteView.vue')
+        },
+        {
+          path:'modify',
+          name:'modify',
+          component:() => import('@/views/ModifiyView.vue')
         }
       ]
     },

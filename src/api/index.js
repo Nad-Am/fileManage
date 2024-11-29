@@ -15,8 +15,8 @@ myApi.interceptors.response.use(
         }
         const status = error.response?.status;
         const message = error.response?.data?.message || "系统出错，请尝试重新登录";
-        ElMessage.error(`[${status}] ${message}`);
-        return Promise.reject(error);
+        // ElMessage.error(`[${status}] ${message}`);
+        return Promise.reject(`${status + message}`);
     }
 );
 
@@ -28,7 +28,7 @@ export const DoAxios = async (path, method, requestInfo, withToken) => {
 
     if (withToken) {
         const userStore = useUserStore();
-        const token = userStore.userToken;
+        const token = userStore?.userToken;
         if (!token) {
             throw "Token 为空，请先登录";
         }
@@ -53,10 +53,21 @@ export const DoAxios = async (path, method, requestInfo, withToken) => {
 
     const data = resp.data;
     if (!data.success) {
-        throw data.message || '未知错误';
+        throw data.errorMsg || '未知错误';
     }
 
     return data;
 };
+
+
+export const DoAxiosWithErro = async (path, method, requestInfo, withToken) => {
+    try{
+        const data = await DoAxios(path, method, requestInfo, withToken)
+        return data;
+    } catch (e) {
+        ElMessage.error(e);
+        throw (new Error(e));
+    }
+}
 
 export default myApi;

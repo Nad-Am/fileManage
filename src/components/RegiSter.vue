@@ -1,46 +1,3 @@
-<template>
-  <div class="login">
-      <h3>注册</h3>
-      <el-form
-      ref="ruleFormRef"
-      style="max-width: 600px"
-      :model="ruleForm"
-      status-icon
-      :rules="rules"
-      label-width="auto"
-      class="demo-ruleForm"
-    >
-      <el-form-item label="name" prop="name">
-        <el-input v-model="ruleForm.name" autocomplete="off" />
-      </el-form-item>
-      <el-form-item label="Password" prop="pass">
-        <el-input v-model="ruleForm.pass" type="password" autocomplete="off" />
-      </el-form-item>
-      <el-form-item label="Confirm" prop="checkPass">
-        <el-input
-          v-model="ruleForm.checkPass"
-          type="password"
-          autocomplete="off"
-        />
-      </el-form-item>
-      <el-form-item label="email" prop="email">
-        <el-input v-model="ruleForm.email" autocomplete="off" />
-      </el-form-item>
-      <el-form-item class="checkcode" label="checkcode" prop="checkcode">
-        <el-input class="code"  v-model="ruleForm.checkcode" autocomplete="off" />
-        <el-button class="but" @click="sendMessage" :disabled="sendButton.disable">{{ sendButton.value }}</el-button>
-      </el-form-item>
-      <el-form-item class="sub">
-        <el-button type="primary" @click="submitForm">
-          Submit
-        </el-button>
-        <el-button @click="resetForm(ruleFormRef)">Reset</el-button>
-      </el-form-item>
-    </el-form>
-    <div class="turn">已有账号，请前往<el-link @click="handleturn" class="link" type="primary">登录</el-link></div>
-  </div>
-</template>
-
 <script setup>
 import axios from 'axios';
 import { reactive, ref , defineEmits} from 'vue'
@@ -102,7 +59,6 @@ const checkCode = (rule,value,callback) => {
 }
 
 const validatePass = (rule, value, callback) => {
-  console.log('Password value:', value);  // 调试日志
   const reg = /^(?=.*[a-zA-Z])(?=.*[\d])[a-zA-Z\d]{6,10}$/;
   if (value === '') {
     return callback(new Error('Please input the password'));
@@ -172,6 +128,49 @@ const sendMessage = () => {
 }
 </script>
 
+<template>
+  <div class="login">
+      <h3>注册</h3>
+      <el-form
+      ref="ruleFormRef"
+      style="max-width: 600px"
+      :model="ruleForm"
+      status-icon
+      :rules="rules"
+      label-width="auto"
+      class="demo-ruleForm"
+    >
+      <el-form-item label="name" prop="name">
+        <el-input v-model="ruleForm.name" autocomplete="off" />
+      </el-form-item>
+      <el-form-item label="Password" prop="pass">
+        <el-input v-model="ruleForm.pass" type="password" show-password autocomplete="off" />
+      </el-form-item>
+      <el-form-item label="Confirm" prop="checkPass">
+        <el-input
+          v-model="ruleForm.checkPass"
+          type="password"
+          show-password
+          autocomplete="off"
+        />
+      </el-form-item>
+      <el-form-item label="email" prop="email">
+        <el-input v-model="ruleForm.email" autocomplete="off" />
+      </el-form-item>
+      <el-form-item class="checkcode" label="checkcode" prop="checkcode">
+        <el-input class="code"  v-model="ruleForm.checkcode" autocomplete="off" />
+        <el-button class="but" @click="sendMessage" :disabled="sendButton.disable">{{ sendButton.value }}</el-button>
+      </el-form-item>
+      <el-form-item class="sub">
+        <el-button type="primary" @click="submitForm">
+          Submit
+        </el-button>
+        <el-button @click="resetForm(ruleFormRef)">Reset</el-button>
+      </el-form-item>
+    </el-form>
+    <div class="turn">已有账号，请前往<el-link @click="handleturn" class="link" type="primary">登录</el-link></div>
+  </div>
+</template>
 
 <style lang="less" scoped>
 @import "../assets/var.less";

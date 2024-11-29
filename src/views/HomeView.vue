@@ -1,7 +1,21 @@
 <script setup>
 import Menue from '@/components/MeNue.vue';
-import { RouterView , RouterLink} from 'vue-router';
+import { useRouter} from 'vue-router';
 import { Search } from '@element-plus/icons-vue'
+import { useUserStore } from '@/stores/user';
+import { ElMessageBox } from 'element-plus';
+
+const userStore = useUserStore();
+const router = useRouter();
+
+const logout = async () => {
+  await userStore.logout();
+  ElMessageBox.alert('退出登录成功','退出',{
+    confirmButtonText:"OK"
+  }).finally(()=> {
+    router.push('/');
+  })
+}
 
 </script>
 
@@ -10,15 +24,15 @@ import { Search } from '@element-plus/icons-vue'
     <el-container class="el-con">
       <el-header>
         <el-row>
-          <el-col :span="1" style="margin: 10px 0;">
+          <el-col :span="0.5" style="margin: auto">
             <el-avatar
-              :size="40"
+              :size="50"
               src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"
             />
           </el-col>
-          <el-col :span="3">name</el-col>
-          <el-col :span="3">
-            <el-button type="primary" style="margin:10px 0">退出登录</el-button>
+          <el-col :span="20" style="margin: auto 0;">lzr</el-col>
+          <el-col :span="2" style="margin:auto">
+            <el-button type="primary" @click="logout">退出登录</el-button>
           </el-col>
         </el-row>
       </el-header>
