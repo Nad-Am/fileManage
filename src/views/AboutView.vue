@@ -6,6 +6,7 @@ import ListCard from '@/components/ListCard.vue';
 import ToolBar from '@/components/ToolBar.vue';
 import { ElMessageBox } from 'element-plus';
 import { menueTurn } from '@/utils/typeDefin';
+import { useIdStore } from '@/stores/counter';
 
 // 初始化数据
 const recalling = ref(false);
@@ -13,6 +14,7 @@ const isloading = ref(true);
 const isfetchmore = ref(false);
 const router = useRouter();
 const route = useRoute();
+const IdStore = useIdStore();
 
 const data = reactive([]);
 
@@ -28,9 +30,12 @@ const buildNewfolder = () => {
 
 // 退出新建文件夹
 const quitBuild = () => {
-  data.value.shift();
   recalling.value = false;
 }
+
+const finishRecall = () => [
+  
+]
 
 const handleMore = async () => {
   isfetchmore.value = true //开始请求
@@ -42,6 +47,24 @@ const handleMore = async () => {
     )
   isfetchmore.value = false;
   data.push(...respon.data.list);
+}
+
+const handleChange = async () => {
+  isloading.value = true;
+  const respon = await DoAxiosWithErro(
+    '/api/files/list',
+    'post',
+    {
+      id:IdStore.getNow().id,
+      isRoot:IdStore.getNow().id === '',
+      pageNo:1,
+      pageSize:10,
+      isAsc:true,
+      isDeleted:false},
+    true
+  )
+  data.splice(0,data.length,...respon.data.list);
+  isloading.value = false;
 }
 
 const fetchDelete = async (e) => {
@@ -62,20 +85,28 @@ const fetchDelete = async (e) => {
 }
 const handleclicked = async (e) => {
     isloading.value = true
-    if(!e.folder) {
-      const respon = await DoAxiosWithErro(`/api/files/preview/${e.id}`,'get',{},true);
-      
-      console.log(respon)
-      window.open(respon.data,'other')
-    } else {
-      data.splice(0,data.length)
-    const respon = await DoAxiosWithErro(
-      '/api/files/list',
-      'post',
-      {id:e.id,isRoot:false,pageNo:1,pageSize:10,isAsc:true,isDeleted:false},
-      true
-    )
-    data.splice(0,data.length,...respon.data.list);
+    try{
+      if(!e.folder) {
+        const respon = await DoAxiosWithErro(`/api/files/preview/${e.id}`,'get',{},true);
+        console.log(respon)
+        window.open(respon.data,'other')
+      } else {
+        data.splice(0,data.length)
+        IdStore.pushId({id:e.id,name:e.name});
+        const respon = await DoAxiosWithErro(
+        '/api/files/list',
+        'post',
+        {id:e.id,isRoot:false,pageNo:1,pageSize:10,isAsc:true,isDeleted:false},
+        true
+      )
+      data.splice(0,data.length,...respon.data.list);
+      }
+    } catch(e) {
+        ElMessageBox.alert('登录过期请重新登录', e, {
+        confirmButtonText: '确定',
+      }).finally(() => {
+        router.push('/');
+      });
     }
     isloading.value = false;
 }
@@ -84,11 +115,13 @@ watch(() => route.query.categoryId, async (newCategoryId) => {
   try {
     isloading.value = true; //开始加载
     data.length = 0;
-    if(newCategoryId === 'all' || newCategoryId === undefined) {
+    if([' ','all'].includes(newCategoryId)|| newCategoryId === undefined) {
+      IdStore.cleareSotre();
+      IdStore.pushId({id:'',name:'全部文件'})
       const respon = await DoAxiosWithErro(
       '/api/files/list',
       'post',
-      {id:'',isRoot:true,pageNo:1,pageSize:10,isAsc:true,isDeleted:false},
+      {id:IdStore.getNow().id,isRoot:true,pageNo:1,pageSize:10,isAsc:true,isDeleted:false},
       true);
       data.splice(0, data.length, ...respon.data.list);
     } else {
@@ -117,7 +150,7 @@ watch(() => route.query.categoryId, async (newCategoryId) => {
   <div class="about">
     <el-row :gutter="0">
       <el-col :span="18">
-        <ToolBar @handlecreat="buildNewfolder" />
+        <ToolBar @handlecreat="buildNewfolder" @StoreChange="handleChange" />
       </el-col>
       <el-col :span="6">
         <el-input
@@ -125,14 +158,15 @@ watch(() => route.query.categoryId, async (newCategoryId) => {
           placeholder="Pick a date"
           prefix-icon="search"
         />
-      </el-col>
+      </el-col> 
     </el-row>
     <div style="flex-grow: 1;">
       <ListCard
         v-loading="isloading"
         :detail="data" 
         :isfetching="isfetchmore"
-        @hanlequit="quitBuild" 
+        @handleRecalled="finishRecall"
+        @hanlequit="quitBuild"
         @fetchMore="handleMore"
         @handleDelet="fetchDelete"
         @clicked="handleclicked"

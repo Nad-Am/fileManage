@@ -28,7 +28,7 @@ const handlechange = async () => {
   files.value = files.value.slice(-3);
 
   files.value.forEach(item => {
-    formdata.append('file',item,item.webkitRelativePath);
+    formdata.append('file',item,item.name);
   })
 
   formdata.append('parentId','');

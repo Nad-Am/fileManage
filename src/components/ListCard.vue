@@ -56,28 +56,25 @@ const handleAll = () => {
 
 const handleclick = (e) => {
   emits('clicked', e);
-  console.log('mainclick');
 };
 
 const handleRecall = (e) => {
+  emits('handleRecalled',e);
   e.isrecall = false;
-  console.log('colcick');
 };
 
 const handlequit = (e) => {
-  if (e.id === '') {
-    emits('hanlequit');
-  }
+  emits('hanlequit',e);
   e.isrecall = false;
 };
 
 const handleDelet = (e) => {
   emits('handleDelet', e);
+  e.isrecall = false;
 };
 
 const handleRecalled = (e) => {
   e.isrecall = true
-  console.log("recalld");
   emits('handleRecalled', e);
 };
 

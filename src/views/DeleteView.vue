@@ -3,9 +3,11 @@ import { watch, ref, reactive, onMounted} from 'vue';
 import { DoAxios,DoAxiosWithErro } from '@/api';
 import { ElMessageBox } from 'element-plus';
 import { useRouter } from 'vue-router';
-import { treeEmits } from 'element-plus/es/components/tree-v2/src/virtual-tree';
+import axios  from 'axios';
+import { useUserStore } from '@/stores/user';
 
 const detail = reactive([]);
+const userStore = useUserStore();
 const router = useRouter();
 const defdetail = reactive(detail.map(item => ({...item,check:false,hasmous:false})));
 const checkAll = ref(false);
@@ -25,13 +27,21 @@ const handleAll = () => {
 }
 
 const deleteEnd = async (e) => {
-    console.log(e);
+   await axios.delete('/api/files/delete', {
+    headers:{
+        'sa-token-authorization':userStore.userToken,
+    },
+    params:{
+        itemId: e.id,
+    },
+    })
+
 }
 
 const handleRefesh = async (e) => {
     const fordata =new FormData();
     fordata.append('fileId',e.id);
-    const respon = await DoAxios('/api/files/recycle/restore','put',fordata,true);
+    const respon = await DoAxiosWithErro('/api/files/recycle/restore','put',fordata,true);
     console.log(respon);
 }
 
@@ -42,7 +52,7 @@ watch(defdetail,(newvalue) => {
 
 onMounted(async () => {
     try{
-        const respon = await DoAxios('/api/files/list','post',{
+        const respon = await DoAxiosWithErro('/api/files/list','post',{
             id:0,
             isRoot:true,
             pageNo:1,
