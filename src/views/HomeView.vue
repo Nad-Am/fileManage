@@ -3,16 +3,20 @@ import Menue from '@/components/MeNue.vue';
 import { useRouter} from 'vue-router';
 import { Search } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user';
-import { ElMessageBox } from 'element-plus';
+import { ElMessageBox, ElMessage } from 'element-plus';
 
 const userStore = useUserStore();
 const router = useRouter();
 
-const logout = async () => {
-  await userStore.logout();
-  ElMessageBox.alert('退出登录成功','退出',{
+const logout = () => {
+  ElMessageBox.alert('确定退出登录吗','退出',{
     confirmButtonText:"OK"
-  }).finally(()=> {
+  }).then(async ()=> {
+    await userStore.logout();
+    ElMessage({
+      message:'退出登录成功',
+      type:'success'
+    })
     router.push('/');
   })
 }
@@ -36,12 +40,12 @@ const logout = async () => {
           </el-col>
         </el-row>
       </el-header>
-      <el-main>
+      <el-main >
         <el-container>
           <el-aside width="250px">
             <Menue></Menue>
           </el-aside>
-          <el-main style="width: 85vh; min-width: 500px; scrollbar-width: none;">
+          <el-main style="width: 85vh; min-width: 500px;padding: 0;scrollbar-width: none;">
             <router-view></router-view>
           </el-main>
         </el-container>

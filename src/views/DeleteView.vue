@@ -3,7 +3,6 @@ import { watch, ref, reactive, onMounted} from 'vue';
 import { DoAxios,DoAxiosWithErro } from '@/api';
 import { ElMessageBox } from 'element-plus';
 import { useRouter } from 'vue-router';
-import axios  from 'axios';
 import { useUserStore } from '@/stores/user';
 
 const detail = reactive([]);
@@ -12,6 +11,7 @@ const router = useRouter();
 const defdetail = reactive(detail.map(item => ({...item,check:false,hasmous:false})));
 const checkAll = ref(false);
 const indeter = ref(false);
+const isfetching = ref(false);
 
 
 const handleenter = (e) => {
@@ -26,23 +26,20 @@ const handleAll = () => {
     })
 }
 
-const deleteEnd = async (e) => {
-   await axios.delete('/api/files/delete', {
-    headers:{
-        'sa-token-authorization':userStore.userToken,
-    },
-    params:{
-        itemId: e.id,
-    },
-    })
-
+const deleteEnd = async (id) => {
+   await DoAxiosWithErro('/api/files/delete','delete',{fileId:id},true)
+   const index = defdetail.findIndex(item => item.id === id);
+   defdetail.splice(index,1)
 }
 
 const handleRefesh = async (e) => {
+    isfetching.value = true;
     const fordata =new FormData();
     fordata.append('fileId',e.id);
-    const respon = await DoAxiosWithErro('/api/files/recycle/restore','put',fordata,true);
-    console.log(respon);
+    await DoAxiosWithErro('/api/files/recycle/restore','put',fordata,true);
+    const index = defdetail.findIndex(item => item.id === e.id);
+    defdetail.splice(index,1)
+    isfetching.value = false;
 }
 
 watch(defdetail,(newvalue) => {
@@ -52,6 +49,7 @@ watch(defdetail,(newvalue) => {
 
 onMounted(async () => {
     try{
+        isfetching.value = true;
         const respon = await DoAxiosWithErro('/api/files/list','post',{
             id:0,
             isRoot:true,
@@ -69,6 +67,7 @@ onMounted(async () => {
         router.push('/');
         });
     } finally {
+        isfetching.value = false
         defdetail.splice(0,defdetail.length,...detail.map(item => ({...item,check:false,hasmous:false})))
     }
 })
@@ -96,7 +95,7 @@ onMounted(async () => {
                 <el-col :span="6">删除时间</el-col>
                 <el-col :span="4">有效时间</el-col>
             </el-row>
-            <div class="scol">
+            <div class="scol" v-loading="isfetching">
                 <el-row
                 class="item"
                  v-for="(item,index) in defdetail"
@@ -141,7 +140,7 @@ onMounted(async () => {
   color: rgba(51, 191, 240);
 }
 .scol{
-    max-height: 72vh;
+    height: 72vh;
     scrollbar-width: none;
     overflow: auto;
 }

@@ -1,20 +1,13 @@
-<template>
-    <input
-    style="display: none;"
-     type="file"
-     ref="inputRef"
-     @change="handlechange"
-     multiple
-    />
-    <el-button text @click="handletrigger">上传文件</el-button>
-</template>
 
 <script setup>
-import { ref } from 'vue';
-import { DoAxios, DoAxiosWithErro } from '@/api';
+import { ref,defineEmits } from 'vue';
+import { DoAxiosWithErro } from '@/api';
+import { useIdStore } from '@/stores/counter';
 
 const files = ref([]);
+const emits = defineEmits(['change']);
 const inputRef = ref(null);
+const IdStore = useIdStore();
 
 const formdata = new FormData();
 
@@ -31,11 +24,21 @@ const handlechange = async () => {
     formdata.append('file',item,item.name);
   })
 
-  formdata.append('parentId','');
+  formdata.append('parentId',IdStore.getNow().id);
 
-  const data = await DoAxiosWithErro('/api/files/upload','post',formdata,true);
-   console.log(data);
+  await DoAxiosWithErro('/api/files/upload','post',formdata,true);
+  emits('change');
 }
-
-
 </script>
+
+<template>
+    <input
+    style="display: none;"
+     type="file"
+     ref="inputRef"
+     @change="handlechange"
+     multiple
+    />
+    <el-button text @click="handletrigger">上传文件</el-button>
+</template>
+

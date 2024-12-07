@@ -4,6 +4,8 @@ import { defineStore } from 'pinia'
 export const useIdStore = defineStore('counter', () => {
   const index = ref(-1);
   const Idstack = reactive([]);
+  const openNewFlied = ref(true);
+  const isSearch = reactive({});
 
   const pushId = (newIdInfor) => {
     Idstack.push(newIdInfor)
@@ -30,5 +32,5 @@ export const useIdStore = defineStore('counter', () => {
     return Idstack[index.value]
   }
   
-  return {index, Idstack, backword, pushId, turnId,cleareSotre,getNow}
+  return {index, Idstack,openNewFlied,isSearch, backword, pushId, turnId,cleareSotre,getNow}
 })

@@ -10,19 +10,16 @@ const activeMenu = ref(route.query.categoryId || 'all');
 
 // 使用 watch 监听路由变化，动态更新 activeMenu
 watch(() => route.query.categoryId, (newCategoryId) => {
-  activeMenu.value = newCategoryId || 'all';
+  activeMenu.value = newCategoryId;
 });
 
 // 点击菜单项时，跳转并传递 categoryId
 const goToAbout = (categoryId) => {
   router.push({ name: 'about', query: { categoryId } });
   activeMenu.value = categoryId;
+  // console.log('open the:',activeMenu.value)
 }
 
-// 退出到首页时，重置菜单项
-const handleOpen = () => {
-  router.push({ name: 'about', query: { categoryId: 'all'} });
-}
 </script>
 
 <template>
@@ -40,12 +37,12 @@ const handleOpen = () => {
           <el-icon><location /></el-icon>
           <span>我的文件</span>
         </template>
-        <el-menu-item :index="'all'" @click="handleOpen">全部</el-menu-item>
-        <el-menu-item :index="'0'" @click="goToAbout('0')">图片</el-menu-item>
-        <el-menu-item :index="'1'" @click="goToAbout('1')">文档</el-menu-item>
-        <el-menu-item :index="'6'" @click="goToAbout('6')">音频</el-menu-item>
-        <el-menu-item :index="'14'" @click="goToAbout('14')">视频</el-menu-item>
-        <el-menu-item :index="'23'" @click="goToAbout('23')">其他</el-menu-item>
+        <el-menu-item :index="'all'" @click="goToAbout('all')">全部</el-menu-item>
+        <el-menu-item :index="'5'" @click="goToAbout('5')">图片</el-menu-item>
+        <el-menu-item :index="'22'" @click="goToAbout('22')">文档</el-menu-item>
+        <el-menu-item :index="'9'" @click="goToAbout('9')">音频</el-menu-item>
+        <el-menu-item :index="'13'" @click="goToAbout('13')">视频</el-menu-item>
+        <el-menu-item :index="'100'" @click="goToAbout('100')">其他</el-menu-item>
       </el-sub-menu>
       <el-menu-item :index="'delete'" :route="{path:'/home/delete' }">
         <el-icon><WindPower /></el-icon>

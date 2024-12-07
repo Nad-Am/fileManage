@@ -8,7 +8,6 @@ const emit = defineEmits(['handlecreat','StoreChange'])
 const IdSotre = useIdStore();
 const handleCreat = () => {
     emit('handlecreat')
-    console.log('ko')
 }
 const handleTo = (index) => {
   if(index === IdSotre.index) {
@@ -30,17 +29,17 @@ const StoreBack = () => {
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item>
-                <FilesUp></FilesUp>
+                <FilesUp @change="emit('StoreChange')"></FilesUp>
               </el-dropdown-item>
               <el-dropdown-item>
-                <FileUp></FileUp>
+                <FileUp @change="emit('StoreChange')"></FileUp>
               </el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
       </el-col>
       <el-col :span="12" >
-        <el-button @click="handleCreat">新建文件夹</el-button>
+        <el-button v-if="IdSotre.openNewFlied" @click="handleCreat">新建文件夹</el-button>
       </el-col>
     </el-row>
     <el-row style="padding: 10px 0;">

@@ -1,9 +1,11 @@
 <script setup>
-import axios from 'axios';
+import { DoAxios, DoAxiosWithErro } from '@/api';
 import { reactive, ref , defineEmits} from 'vue'
+import { ElMessage } from 'element-plus';
 //   import { FormInstance, FormRules } from 'element-plus' // 不需要类型导入
 
 const ruleFormRef = ref('')
+const isfetching = ref(false);
 
 const sendButton = reactive({
   value:"发送请求",
@@ -14,7 +16,6 @@ const sendButton = reactive({
 const ruleForm = reactive({
   pass: '',
   checkPass: '',
-  age: '',
   name:'',
   email:'',
   checkcode:''
@@ -25,11 +26,33 @@ const handleturn = () => {
   emit('turnLoR','login');
 }
 
-const hadleSend = async () => {
+const handleSend = async () => {
   const fromData = new FormData();
-  fromData.append('to',ruleForm.email)
-  const response = await axios.post('/api/users/email',fromData);
-  console.log(response);   
+  try{
+    fromData.append('to',ruleForm.email)
+    const response = await DoAxios('/api/users/email','post',fromData,false);
+    console.log(response)
+    ElMessage({
+      message:'发送成功',
+      type:'success'
+    })
+    sendButton.disable = true;
+    sendButton.refresh = 60;
+    sendButton.value = '重发'
+    const timer = setInterval(()=>{
+      sendButton.refresh = sendButton.refresh - 1;
+      if(sendButton.refresh === 0) {
+        clearInterval(timer);
+        sendButton.value = '重新发送'
+        sendButton.disable = false;
+      }
+    },1000);
+  } catch(e){
+    ElMessage({
+      message:e,
+      type:'error'
+    })
+  }
 } 
 
 const checkName = (rule,value,callback) => {
@@ -86,11 +109,11 @@ const validatePass2 = (rule, value, callback) => {
 
 
 const rules = reactive({
-  pass: [{ validator: validatePass, trigger: 'blur' }],
-  checkPass: [{ validator: validatePass2, trigger: 'blur' }],
+  pass: [{ validator: validatePass, trigger: 'change' }],
+  checkPass: [{ validator: validatePass2, trigger: 'change' }],
   name: [{validator: checkName, trigger:"blur"}],
-  email:[{validator:checkEmail,trigger:"blur"}],
-  checkcode:[{validator:checkCode,trigger:'blur'}]
+  email:[{validator:checkEmail,trigger:"change"}],
+  checkcode:[{validator:checkCode,trigger:'change'}]
 })
 
 const submitForm = () => {
@@ -100,12 +123,22 @@ const submitForm = () => {
     console.log("undefind is err");
     return;
   }
-  formEl.validate((valid) => {
+  formEl.validate(async(valid) => {
     if (valid) {
-      console.log('submit!')
-      console.log(ruleForm);
-    } else {
-      console.log('error submit!')
+      const formdata = new FormData();
+      formdata.append('logName',ruleForm.name)
+      formdata.append('password',ruleForm.pass)
+      formdata.append('email',ruleForm.email)
+      formdata.append('checkCode',ruleForm.checkcode)
+      isfetching.value = true
+      await DoAxiosWithErro('/api/users/register','post',formdata,false).finally(()=> {
+        isfetching.value = false
+      });
+      ElMessage({
+        message:'注册成功！',
+        type:'success'
+      })
+      handleturn();
     }
   })
 }
@@ -115,17 +148,27 @@ const resetForm = (formEl) => {
   formEl.resetFields()
 }
 
-const sendMessage = () => {
-    const formEl = ruleFormRef.value;
-    formEl.validateField('email',(valtor) => {
-      if(valtor) {
-        console.log("send Message");
-        hadleSend();
-      } else{
-        console.log("not exist email")
-      }
-    })
-}
+const sendMessage = async () => {
+  const formEl = ruleFormRef.value;
+  const validateList = ['pass', 'checkPass', 'name', 'email'];
+
+  // 使用 Promise.all 来处理所有的验证
+  const validationPromises = validateList.map(item => {
+    return new Promise((resolve, reject) => {
+      formEl.validateField(item, (validata) => {
+        if (validata) {
+          resolve(true); // 如果验证通过，resolve
+        } else {
+          reject(false); // 如果验证失败，reject
+        }
+      });
+    });
+  });
+    // 等待所有字段验证完成
+    await Promise.all(validationPromises);
+    handleSend(); // 验证通过后发送消息
+};
+
 </script>
 
 <template>
@@ -159,10 +202,13 @@ const sendMessage = () => {
       </el-form-item>
       <el-form-item class="checkcode" label="checkcode" prop="checkcode">
         <el-input class="code"  v-model="ruleForm.checkcode" autocomplete="off" />
-        <el-button class="but" @click="sendMessage" :disabled="sendButton.disable">{{ sendButton.value }}</el-button>
+        <el-button class="but" @click="sendMessage" :disabled="sendButton.disable">
+          <span v-show="sendButton.disable">{{ sendButton.refresh }}秒后</span>
+          {{ sendButton.value }}
+        </el-button>
       </el-form-item>
       <el-form-item class="sub">
-        <el-button type="primary" @click="submitForm">
+        <el-button type="primary" @click="submitForm" :disabled="isfetching">
           Submit
         </el-button>
         <el-button @click="resetForm(ruleFormRef)">Reset</el-button>

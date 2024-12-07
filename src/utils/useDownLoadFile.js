@@ -1,15 +1,12 @@
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { DoAxios } from '@/api';
+import axios from 'axios';
 
-export const useDownloadFile = async (filename, downloadUrl) => {
-  if (!filename) {
-    ElMessage.warning('Please enter a filename.');
-    return;
-  }
+export const useDownloadFile = async (fileId,fileName,onprogress) => {
 
-  try {
     // 弹出确认框提示用户下载将开始
     await ElMessageBox.confirm(
-      `You are about to download the file: ${filename}. It will be saved to your default download folder.`,
+      `You are about to download the file: ${fileId}. It will be saved to your default download folder.`,
       'Download File',
       {
         confirmButtonText: 'Start Download',
@@ -19,30 +16,34 @@ export const useDownloadFile = async (filename, downloadUrl) => {
     );
 
     // 从后端请求文件
-    const response = await fetch(`${downloadUrl}?filename=${filename}`);
+    const res = await DoAxios(`/api/files/download/${fileId}`,'get',{},true)
+    const response = await axios.get(res.data,{
+      responseType:'blob',
+      onDownloadProgress:(progress) => {
+        if(progress.lengthComputable) {
+          const percentComplete = ((progress.loaded/progress.total) * 100).toFixed(2);
+          onprogress(percentComplete)
+        } else {
+          console.log(`Downloaded ${progress.loaded} bytes (total size unknown)`)
+        }
+      }
+    })
+    const fileType = response.headers['content-type'];
+    const blob = new Blob([response.data],{type:fileType});
+    console.log(fileType);
+    const downloadURL = URL.createObjectURL(blob);
 
-    if (!response.ok) {
-      throw new Error('File not found or download failed.');
-    }
-
-    // 将文件数据转换为 Blob 格式
-    const blob = await response.blob();
-    const downloadLink = window.URL.createObjectURL(blob);
-
-    // 创建下载链接并触发下载
     const a = document.createElement('a');
-    a.href = downloadLink;
-    a.download = filename;
+    a.href = downloadURL;
+    a.download = fileName || 'download_VitApp';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
 
-    // 释放 URL 资源
-    window.URL.revokeObjectURL(downloadLink);
-
-    // 成功提示
-    ElMessage.success('Download started!');
-  } catch (error) {
-    ElMessage.error(error.message);
-  }
+    URL.revokeObjectURL(downloadURL);
+    console.log("finish")
+  // } catch (error) {
+  //   console.log(error)
+  //   ElMessage.error(error.message);
+  // }
 };

@@ -1,68 +1,152 @@
 <script setup>
 import { useRouter, useRoute } from 'vue-router';
-import { DoAxios, DoAxiosWithErro} from '@/api';
+import {  DoAxiosWithErro} from '@/api';
 import { reactive, ref, watch} from 'vue';  // 引入 watch
 import ListCard from '@/components/ListCard.vue';
 import ToolBar from '@/components/ToolBar.vue';
-import { ElMessageBox } from 'element-plus';
-import { menueTurn } from '@/utils/typeDefin';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { catrgoryConfig } from '@/utils/typeDefin';
 import { useIdStore } from '@/stores/counter';
 
 // 初始化数据
+const iframSrc = ref('');
+const nowCategoryId = ref('');
+const pageSize = 12;
 const recalling = ref(false);
 const isloading = ref(true);
 const isfetchmore = ref(false);
 const router = useRouter();
 const route = useRoute();
 const IdStore = useIdStore();
+const search = ref('');
+const total = ref(0);
+const pageNo = ref(1);
 
 const data = reactive([]);
 
-// const Filetype = new Map([
+const getConfig = (categoryId,id = '') => {
+  const mainType = catrgoryConfig(categoryId).mainType;
+    let axiosBody;
+    if(!mainType) {
+      axiosBody = {id,isRoot:id === '',isAsc:true,isDeleted:false,pageNo:pageNo.value,pageSize};
+    } else {
+      axiosBody ={mainType,pageNo:pageNo.value,pageSize};
+    }
+    return catrgoryConfig(categoryId,axiosBody).axiosConfig;
+}
 
-// ])
+const handlesearch = async (name) => {
+  if(!name) {
+    ElMessage({
+      message:'搜索内容不能为空',
+      type:'warning'
+    })
+    return
+  }
+  IdStore.openNewFlied = false;
+  IdStore.cleareSotre();
+  IdStore.pushId({id:-1,name:`搜索：${name}`,value:name})
+  router.push({
+    path:route.path,
+    query:{
+      categoryId:-1,
+      search:name
+    }
+  })
+  const respon = await DoAxiosWithErro('/api/files/search','post',{
+    pageNo:pageNo.value,
+    pageSize,
+    isAsc:true,
+    fileName:name
+  },true)
+  total.value = respon.data.total;
+  data.splice(0,data.length,...respon.data.list);
+  search.value = '';
+}
 
 // 新建文件夹
 const buildNewfolder = () => {
   if (recalling.value) return;
+  data.unshift({
+    id:-1,
+    categoryId:0,
+  })
   recalling.value = true;
 }
 
 // 退出新建文件夹
-const quitBuild = () => {
-  recalling.value = false;
+const quitBuild = (e) => {
+  if(e.id === -1){
+    // const index = data.findIndex(item => item.id === -1)
+    data.splice(0,1);
+    recalling.value = false 
+  }
 }
 
-const finishRecall = () => [
-  
-]
+const finishRecall = async (e,name) => {
+  if(e.id === -1) {
+    try{
+      const fordata = new FormData()
+      fordata.append('parentId',IdStore.getNow().id)
+      fordata.append('folderName',name)
+      await DoAxiosWithErro('/api/files/create','post',fordata,true)
+      handleChange();
+    } catch{
+      data.splice(0,1);
+    } finally{
+      recalling.value = true;
+    }
+  } else {
+      const formdata = new FormData();
+      formdata.append('fileId',e.id);
+      formdata.append('newFileName',name);
+      await DoAxiosWithErro('/api/files/rename','put',formdata,true);
+      handleChange();
+  }
+}
 
-const handleMore = async () => {
+const handleMore = async (length) => {
+  if(length >= total.value) {
+    return;
+  }
+  pageNo.value = length/pageSize + 1;
   isfetchmore.value = true //开始请求
-  const respon = await DoAxiosWithErro(
-      '/api/files/listByMainType',
-      'get',
-      {mainType:'application',pageSize:15,pageNo:2},
-      true
-    )
+  if(IdStore.getNow().id === -1) {
+    const respon = await DoAxiosWithErro('/api/files/search','post',{
+      pageNo:pageNo.value,
+      pageSize,
+      isAsc:true,
+      fileName:name
+    },true)
+    isfetchmore.value = false;
+    data.push(...respon.data.list);
+    return
+  }
+  const config = getConfig(nowCategoryId.value,IdStore.getNow().id);
+  const respon = await DoAxiosWithErro(...config);
   isfetchmore.value = false;
   data.push(...respon.data.list);
 }
 
 const handleChange = async () => {
   isloading.value = true;
+  const id = IdStore.getNow().id;
+  if(id === -1) {
+    handlesearch(IdStore.getNow().value);
+  }
   const respon = await DoAxiosWithErro(
     '/api/files/list',
     'post',
     {
-      id:IdStore.getNow().id,
-      isRoot:IdStore.getNow().id === '',
+      id,
+      isRoot:id === '',
       pageNo:1,
-      pageSize:10,
+      pageSize,
       isAsc:true,
       isDeleted:false},
     true
   )
+  total.value = respon.data.total;
   data.splice(0,data.length,...respon.data.list);
   isloading.value = false;
 }
@@ -78,60 +162,70 @@ const fetchDelete = async (e) => {
     if (index !== -1) {
       data.splice(index, 1);
     }
+    handleclicked();
   } catch(e) {
     console.log(e);
   }
   isloading.value = false;
 }
 const handleclicked = async (e) => {
+    pageNo.value = 1;
     isloading.value = true
     try{
       if(!e.folder) {
         const respon = await DoAxiosWithErro(`/api/files/preview/${e.id}`,'get',{},true);
-        console.log(respon)
         window.open(respon.data,'other')
+        // iframSrc.value = respon.data;
       } else {
         data.splice(0,data.length)
         IdStore.pushId({id:e.id,name:e.name});
         const respon = await DoAxiosWithErro(
         '/api/files/list',
         'post',
-        {id:e.id,isRoot:false,pageNo:1,pageSize:10,isAsc:true,isDeleted:false},
+        {id:e.id,isRoot:false,pageNo:pageNo.value,pageSize,isAsc:true,isDeleted:false},
         true
       )
+      total.value = respon.data.total;
       data.splice(0,data.length,...respon.data.list);
       }
     } catch(e) {
-        ElMessageBox.alert('登录过期请重新登录', e, {
-        confirmButtonText: '确定',
-      }).finally(() => {
-        router.push('/');
-      });
+      console.log('click',e)
+      //   ElMessageBox.alert('登录过期请重新登录', e, {
+      //   confirmButtonText: '确定',
+      // }).finally(() => {
+      //   router.push('/');
+      // });
     }
     isloading.value = false;
 }
+const fetchMultChoice = (list) => {
+  console.log(list);
+}
 // 使用 watch 监听路由的变化
 watch(() => route.query.categoryId, async (newCategoryId) => {
-  try {
-    isloading.value = true; //开始加载
-    data.length = 0;
-    if([' ','all'].includes(newCategoryId)|| newCategoryId === undefined) {
-      IdStore.cleareSotre();
-      IdStore.pushId({id:'',name:'全部文件'})
-      const respon = await DoAxiosWithErro(
-      '/api/files/list',
-      'post',
-      {id:IdStore.getNow().id,isRoot:true,pageNo:1,pageSize:10,isAsc:true,isDeleted:false},
-      true);
-      data.splice(0, data.length, ...respon.data.list);
-    } else {
-      const respon = await DoAxiosWithErro(
-      '/api/files/listByMainType',
-      'get',
-      {mainType:menueTurn(newCategoryId),pageSize:20,pageNo:1},
-      true);
-      data.splice(0, data.length, ...respon.data.list);
+  if(newCategoryId === '-1') {
+    if(route.query.search){
+      console.log('search')
+      handlesearch(route.query.search);
     }
+    isloading.value = false;
+    return
+  }
+  try {
+    IdStore.openNewFlied = false;
+    if(!newCategoryId || ['','all'].includes(newCategoryId)) {
+      IdStore.openNewFlied =true;
+    }
+    pageNo.value = 1;
+    nowCategoryId.value = newCategoryId;
+    isloading.value = true; //开始加载
+    IdStore.cleareSotre();
+    IdStore.pushId({id:'',name:'全部文件'})
+    const config = getConfig(newCategoryId);
+    const respon = await DoAxiosWithErro(...config);
+
+    total.value = respon.data.total;
+    data.splice(0,data.length,...respon.data.list);
   } catch (error) {
     ElMessageBox.alert('登录过期请重新登录', error, {
       confirmButtonText: '确定',
@@ -154,10 +248,14 @@ watch(() => route.query.categoryId, async (newCategoryId) => {
       </el-col>
       <el-col :span="6">
         <el-input
+          v-model="search"
           style="width: 240px"
           placeholder="Pick a date"
-          prefix-icon="search"
-        />
+        >
+        <template #append>
+          <el-icon @click="handlesearch(search)"><Search /></el-icon>
+        </template>
+        </el-input>
       </el-col> 
     </el-row>
     <div style="flex-grow: 1;">
@@ -170,7 +268,15 @@ watch(() => route.query.categoryId, async (newCategoryId) => {
         @fetchMore="handleMore"
         @handleDelet="fetchDelete"
         @clicked="handleclicked"
+        @handleMultChoice="fetchMultChoice"
         />
+    </div>
+    <div class="preview" v-if="iframSrc" style="position: fixed;top: 0;left: 0; width: 100vw;height: 100vh;background: #000;">
+      <iframe
+       :src="iframSrc"
+       width="100%"
+       height="100%"
+      ></iframe>
     </div>
     <!-- <FileDown></FileDown> -->
   </div>

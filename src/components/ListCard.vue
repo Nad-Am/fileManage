@@ -1,6 +1,8 @@
 <script setup>
-import { ref, reactive, watch, defineEmits, defineProps } from 'vue';
+import { ref, reactive, watch, defineEmits, defineProps, toRaw } from 'vue';
 import * as Icons from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
+import { useDownloadFile } from '@/utils/useDownLoadFile';
 // import debounce from '@/utils/debounce';
 
 const pro = defineProps({
@@ -13,30 +15,24 @@ const pro = defineProps({
       default:false
     }
 });
-const emits = defineEmits(['clicked', 'hanlequit', 'handleDelet', 'handleRecalled', 'handleLoad','fetchMore']);
+const emits = defineEmits(['handleMultChoice','clicked', 'hanlequit', 'handleDelet', 'handleRecalled', 'handleLoad','fetchMore']);
 const checkAll = ref(false);
 const indeter = ref(false);
 const scoll = ref(null);
+const recallinput = ref('');
+const isload = ref(false);
+const progress = ref(0);
+const choiceLength = ref(0);
 
-const Iconname = new Map([
-  [0, 'Folder'],
-  [2, 'Promotion'],
-  [3, 'ChatSquare']
-]);
 
-const typeFile = new Map([
-  [0, '文件夹'],
-  [2, 'Promotion'],
-  [3, 'ChatSquare']
-]);
 
 
 const checkList = reactive(
   pro.detail.map((item) => ({
+    isrecall: false,
     ...item,
     check: false,
     hasmouse: false,
-    isrecall: false,
   }))
 );
 
@@ -59,7 +55,15 @@ const handleclick = (e) => {
 };
 
 const handleRecall = (e) => {
-  emits('handleRecalled',e);
+  if(!recallinput.value){
+    ElMessage({
+      message:'文件名不能为空',
+      type:'error',
+      grouping:true
+    })
+    return
+  }
+  emits('handleRecalled',e,recallinput.value);
   e.isrecall = false;
 };
 
@@ -69,18 +73,24 @@ const handlequit = (e) => {
 };
 
 const handleDelet = (e) => {
-  emits('handleDelet', e);
-  e.isrecall = false;
+  emits('handleDelet', e.id);
 };
 
 const handleRecalled = (e) => {
   e.isrecall = true
-  emits('handleRecalled', e);
 };
 
-const handleLoad = (e) => {
-  emits('handleLoad', e);
+const handleLoad = async (id,name) => {
+  await useDownloadFile(id,name,onProgress);
 };
+
+const onProgress = (updateProgress) => {
+  isload.value = true;
+  progress.value = updateProgress;
+  if(progress.value === '100.00') {
+    isload.value = false;
+  }
+}
 
 const getIconComponent = (categoryId) => {
   if(categoryId === 0) {
@@ -130,14 +140,12 @@ const scollTop = () => {
 };
 
 const handleMore = () => {
-  if (!scoll.value) return;
+  if (!scoll.value || pro.isfetching) return;
   const scrollTop = scoll.value.scrollTop; // 当前滚动位置
   const scrollHeight = scoll.value.scrollHeight; // 滚动区域总高度
   const clientHeight = scoll.value.clientHeight; // 可视区域高度
-
   // 判断是否接近底部，触发加载更多
   if (scrollTop + clientHeight >= scrollHeight - 10) {
-    console.log('do more')
     emits('fetchMore',pro.detail.length);
   }
 }
@@ -149,8 +157,15 @@ const handleMore = () => {
 watch(
   checkList,
   (newVal) => {
-    checkAll.value = newVal.every((item) => item.check);
-    indeter.value = newVal.some((i) => i.check) && !checkAll.value;
+    const rawList = toRaw(newVal);
+    const choiceList = rawList.filter(item => item.check);
+    checkAll.value = choiceLength.value === newVal.length;
+    indeter.value = choiceList.length != 0 && !checkAll.value;
+    if(choiceList.length != choiceLength.value) {
+      console.log(choiceList);
+      emits('handleMultChoice',choiceList);
+    }
+    choiceLength.value = choiceList.length;
   },
   { deep: true }
 );
@@ -158,7 +173,6 @@ watch(
 watch(
   () => pro.detail,
   (newDetail) => {
-    // scollTop();
     checkList.splice(
       0,
       checkList.length,
@@ -166,16 +180,19 @@ watch(
         ...item,
         check: false,
         hasmouse: false,
-        isrecall: item.id === '',
+        isrecall: item.id === -1,
       }))
     );
+    if(checkList[0] && checkList[0].id === -1){
+      scollTop();
+    }
   },
   { immediate: true, deep: true }
 );
 </script>
 
 <template>
-  <div>
+  <div style="position: relative;">
     <el-row :gutter="10" style="padding: 10px; min-width: 700px;">
       <el-col :span="0.5">
         <el-checkbox
@@ -193,7 +210,8 @@ watch(
     <div 
       ref="scoll" 
       @scroll="handleMore"
-      style="height: 75vh;overflow: auto;min-width: 700px;scrollbar-width: none; "
+      :style="{filter:isload ? 'blur(3px)':''}"
+      style="height: 70vh;overflow: auto;min-width: 700px;scrollbar-width: none;"
     >
     <el-empty v-show="detail.length ===0" description="description" />
       <el-row 
@@ -219,7 +237,7 @@ watch(
             <el-icon size="20" style="margin: 5px 5px;">
               <component :is="getIconComponent(item.categoryId)"></component>
             </el-icon>
-            <el-input style="width: 60%;margin-right: 5px;"></el-input>
+            <el-input v-model="recallinput" style="width: 60%;margin-right: 5px;"></el-input>
             <el-button @click="handleRecall(item)" type="success" circle icon="Check" size="small"></el-button>
             <el-button @click="handlequit(item)" type="danger" circle icon="Close" size="small"></el-button>
           </el-row>
@@ -230,13 +248,13 @@ watch(
             content="下载"
             effect="light"
           >
-            <el-icon @click="handleLoad(item)" style="margin:0 10px; cursor: pointer;" color="rgba(51, 191, 240)"><Download /></el-icon>
+            <el-icon @click="handleLoad(item.id,item.name)" style="margin:0 10px; cursor: pointer;" color="rgba(51, 191, 240)"><Download /></el-icon>
           </el-tooltip>
           <el-tooltip
             content="删除"
             effect="light"
           >
-            <el-icon @click="handleDelet(item.id)" style="margin:0 10px; cursor: pointer;" color="rgba(51, 191, 240)"><DeleteFilled /></el-icon>
+            <el-icon @click="handleDelet(item)" style="margin:0 10px; cursor: pointer;" color="rgba(51, 191, 240)"><DeleteFilled /></el-icon>
           </el-tooltip>
           <el-tooltip
             content="重命名"
@@ -255,6 +273,19 @@ watch(
       </el-row>
       <div style="width: 100%; height: 30px;" v-loading="pro.isfetching"></div>
     </div>
+    <div class="progress" :style="{display:isload ? '':'none'}">
+        <div class="inpro">
+          <el-progress
+          :stroke-width="15"
+          :percentage="Number(progress)"
+          :text-inside="true"
+          striped
+          striped-flow
+          :duration="10"
+          ></el-progress>
+          <div style="text-align: center;margin: 5px;">下载中...</div>
+        </div>
+      </div>
   </div>
 </template>
 
@@ -265,5 +296,20 @@ watch(
 .name:hover{
 cursor: pointer;
   color: rgba(51, 191, 240);
+}
+.progress{
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  .inpro{
+    width: 50%;
+    position: absolute;
+    top: 35%;
+    left: 40%;
+    transform: translate(-50%,-50%);
+  }
+  
 }
 </style>
