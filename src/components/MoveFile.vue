@@ -2,7 +2,8 @@
 import { DoAxiosWithErro } from '@/api';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { catrgoryConfig } from '@/utils/typeDefin';
-    
+import { useUserStore } from '@/stores/user';
+    const userStore = useUserStore();
     const Flielist = reactive([]);
     const emits = defineEmits(['quite','moved']);
     const pageNo = ref(1);
@@ -12,7 +13,8 @@ import { catrgoryConfig } from '@/utils/typeDefin';
         Ids:[
             {
                 id:'',
-                name:'全部文件'
+                name:'全部文件',
+                path:userStore.useInfo.username + '/'
             }
         ]
     });
@@ -39,7 +41,8 @@ import { catrgoryConfig } from '@/utils/typeDefin';
         naveStore.index ++;
         naveStore.Ids.push({
             id:parentInfo.id,
-            name:parentInfo.name
+            name:parentInfo.name,
+            path:parentInfo.path
         })
         getNowList();
     }
@@ -48,7 +51,7 @@ import { catrgoryConfig } from '@/utils/typeDefin';
         emits('quite')
     }
     const moved = ()=> {
-        emits('moved')
+        emits('moved',naveStore.Ids[naveStore.index].id);
     }
 
     const naveChange = (index) => {
@@ -56,7 +59,7 @@ import { catrgoryConfig } from '@/utils/typeDefin';
         naveStore.index = index
         naveStore.Ids.splice(index + 1,naveStore.Ids.length);
         getNowList();
-    }
+    } 
 
     onMounted(async ()=> {
         getNowList()

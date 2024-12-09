@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { DoAxiosWithErro } from "@/api";
 export const useUserStore =  defineStore('user',{
     state:() => ({
-        useInfo:null,
+        useInfo:localStorage.getItem('useInfo') || null,
         userToken: localStorage.getItem('userToken') || '',
         isLoggedIn:false
     }),
@@ -19,12 +19,13 @@ export const useUserStore =  defineStore('user',{
 
               this.useInfo = data.data;
               localStorage.setItem('userToken', this.userToken);
-              
+              localStorage.setItem('useInfo',this.useInfo);
         },
         async logout() {
           this.userInfo = null;
           await DoAxiosWithErro('/api/users/logout','post',{},true);
           localStorage.removeItem('userToken');
+          localStorage.removeItem('useInfor');
           this.isLoggedIn = false;
         }
       }

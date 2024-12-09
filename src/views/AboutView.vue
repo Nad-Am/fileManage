@@ -1,10 +1,13 @@
 <script setup>
-import { useRouter, useRoute } from 'vue-router';
-import {  DoAxiosWithErro} from '@/api';
-import { reactive, ref, watch} from 'vue';  // 引入 watch
+
 import ListCard from '@/components/ListCard.vue';
 import ToolBar from '@/components/ToolBar.vue';
 import MoveFile from '@/components/MoveFile.vue';
+import PreView from '@/components/PreView.vue';
+
+import { useRouter, useRoute } from 'vue-router';
+import {  DoAxiosWithErro} from '@/api';
+import { reactive, ref, watch} from 'vue';  // 引入 watch
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { catrgoryConfig } from '@/utils/typeDefin';
 import { useIdStore } from '@/stores/counter';
@@ -267,14 +270,23 @@ const fetchMuMove = async () => {
 const quiteMove = () => {
   isMoveFile.value = false;
 }
-const submitMove = (parentId)=> {
-  console.log(parentId);
+const submitMove = async (parentId)=> {
+  console.log(IdStore.getNow())
+  await DoAxiosWithErro('/api/files/moveBatch','put',{
+    fileIds:MultyList,
+    newParentId:parentId
+  },true,false)
   isMoveFile.value = false;
 }
 
 const fetchMuDownload = async () => {
-  console.log('download')
+  console.log(MultyList);
 }
+
+const PreQuite = () => {
+  iframSrc.value = '';
+}
+
 // 使用 watch 监听路由的变化
 watch(() => route.query.categoryId, (newCategoryId) => {
   initList(newCategoryId);
@@ -321,13 +333,14 @@ watch(() => route.query.categoryId, (newCategoryId) => {
         @handleMultChoice="getMultChoice"
         />
     </div>
-    <div class="preview" v-if="isMoveFile">
-      <!-- <iframe
-       :src="iframSrc"
-       width="100%"
-       height="100%"
-      ></iframe> -->
+    <div class="preview" v-if="isMoveFile || iframSrc!== ''">
+      <PreView
+      v-if="iframSrc !== ''"
+      @quite="PreQuite"
+      :ifram-src="iframSrc"
+      ></PreView>
       <MoveFile 
+       v-if="isMoveFile"
        @quite="quiteMove"
        @moved="submitMove"
       ></MoveFile>

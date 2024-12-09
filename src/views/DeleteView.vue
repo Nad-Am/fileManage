@@ -125,6 +125,12 @@ onMounted(async () => {
                     </el-col>
                 </el-row>
             </div>
+            <div style="width: 100%; height: 100%;">
+                <el-empty 
+                v-show="defdetail.length ===0" 
+                description="还没有任何文件哦，上传一个吧"
+                />
+            </div>
         </el-main>
     </el-container>
 </template>
