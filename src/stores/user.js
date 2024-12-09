@@ -15,11 +15,9 @@ export const useUserStore =  defineStore('user',{
       actions: {
         async login(userData) {
               const data = await DoAxiosWithErro('/api/users/login','post',userData,false);
-              // console.log(data.tokenValue,data.data);
               this.userToken = data.data.saTokenInfo.tokenValue;
 
               this.useInfo = data.data;
-          console.log(this.userToken);
               localStorage.setItem('userToken', this.userToken);
               
         },

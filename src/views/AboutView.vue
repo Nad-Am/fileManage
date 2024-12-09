@@ -4,6 +4,7 @@ import {  DoAxiosWithErro} from '@/api';
 import { reactive, ref, watch} from 'vue';  // 引入 watch
 import ListCard from '@/components/ListCard.vue';
 import ToolBar from '@/components/ToolBar.vue';
+import MoveFile from '@/components/MoveFile.vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { catrgoryConfig } from '@/utils/typeDefin';
 import { useIdStore } from '@/stores/counter';
@@ -12,15 +13,20 @@ import { useIdStore } from '@/stores/counter';
 const iframSrc = ref('');
 const nowCategoryId = ref('');
 const pageSize = 12;
-const recalling = ref(false);
-const isloading = ref(true);
-const isfetchmore = ref(false);
-const router = useRouter();
-const route = useRoute();
-const IdStore = useIdStore();
 const search = ref('');
 const total = ref(0);
 const pageNo = ref(1);
+const MultyList = reactive([]);
+
+const recalling = ref(false);
+const isloading = ref(true);
+const isfetchmore = ref(false);
+const isBulk = ref(false);
+const isMoveFile = ref(false)
+
+const router = useRouter();
+const route = useRoute();
+const IdStore = useIdStore();
 
 const data = reactive([]);
 
@@ -33,6 +39,41 @@ const getConfig = (categoryId,id = '') => {
       axiosBody ={mainType,pageNo:pageNo.value,pageSize};
     }
     return catrgoryConfig(categoryId,axiosBody).axiosConfig;
+}
+
+const initList = async (newCategoryId) => {
+  if(newCategoryId === '-1') {
+    if(route.query.search){
+      console.log('search')
+      handlesearch(route.query.search);
+    }
+    isloading.value = false;
+    return
+  }
+  try {
+    IdStore.openNewFlied = false;
+    if(!newCategoryId || ['','all'].includes(newCategoryId)) {
+      IdStore.openNewFlied =true;
+    }
+    pageNo.value = 1;
+    nowCategoryId.value = newCategoryId;
+    isloading.value = true; //开始加载
+    IdStore.cleareSotre();
+    IdStore.pushId({id:'',name:'全部文件'})
+    const config = getConfig(newCategoryId);
+    const respon = await DoAxiosWithErro(...config);
+
+    total.value = respon.data.total;
+    data.splice(0,data.length,...respon.data.list);
+  } catch (error) {
+    ElMessageBox.alert('登录过期请重新登录', error, {
+      confirmButtonText: '确定',
+    }).finally(() => {
+      router.push('/');
+    });
+  } finally {
+    isloading.value = false; // 结束加载
+  }
 }
 
 const handlesearch = async (name) => {
@@ -162,7 +203,6 @@ const fetchDelete = async (e) => {
     if (index !== -1) {
       data.splice(index, 1);
     }
-    handleclicked();
   } catch(e) {
     console.log(e);
   }
@@ -189,52 +229,55 @@ const handleclicked = async (e) => {
       data.splice(0,data.length,...respon.data.list);
       }
     } catch(e) {
-      console.log('click',e)
-      //   ElMessageBox.alert('登录过期请重新登录', e, {
-      //   confirmButtonText: '确定',
-      // }).finally(() => {
-      //   router.push('/');
-      // });
+        ElMessageBox.alert('登录过期请重新登录', e, {
+        confirmButtonText: '确定',
+      }).finally(() => {
+        router.push('/');
+      });
     }
     isloading.value = false;
 }
-const fetchMultChoice = (list) => {
-  console.log(list);
-}
-// 使用 watch 监听路由的变化
-watch(() => route.query.categoryId, async (newCategoryId) => {
-  if(newCategoryId === '-1') {
-    if(route.query.search){
-      console.log('search')
-      handlesearch(route.query.search);
-    }
-    isloading.value = false;
+const getMultChoice = (list) => {
+  if(!list.length) {
+    isBulk.value = false;
     return
   }
-  try {
-    IdStore.openNewFlied = false;
-    if(!newCategoryId || ['','all'].includes(newCategoryId)) {
-      IdStore.openNewFlied =true;
-    }
-    pageNo.value = 1;
-    nowCategoryId.value = newCategoryId;
-    isloading.value = true; //开始加载
-    IdStore.cleareSotre();
-    IdStore.pushId({id:'',name:'全部文件'})
-    const config = getConfig(newCategoryId);
-    const respon = await DoAxiosWithErro(...config);
+  const IdList = list.map(item => item.id);
+  MultyList.splice(0,MultyList.length,...IdList);
+  isBulk.value = true;
+}
 
-    total.value = respon.data.total;
-    data.splice(0,data.length,...respon.data.list);
-  } catch (error) {
-    ElMessageBox.alert('登录过期请重新登录', error, {
-      confirmButtonText: '确定',
-    }).finally(() => {
-      router.push('/');
-    });
-  } finally {
-    isloading.value = false; // 结束加载
-  }
+const fetchMuDelte = async () => {
+   await DoAxiosWithErro(
+    '/api/files/recycle/deleteBatch',
+    'put',
+    {fileIds:MultyList},
+    true,true);
+
+    const newdata = data.filter(i => !MultyList.includes(i.id));
+    console.log(newdata);
+    MultyList.splice(0,MultyList.length);
+    data.splice(0,data.length,...newdata);
+    console.log('end',data);
+}
+
+const fetchMuMove = async () => {
+  isMoveFile.value = true;
+}
+const quiteMove = () => {
+  isMoveFile.value = false;
+}
+const submitMove = (parentId)=> {
+  console.log(parentId);
+  isMoveFile.value = false;
+}
+
+const fetchMuDownload = async () => {
+  console.log('download')
+}
+// 使用 watch 监听路由的变化
+watch(() => route.query.categoryId, (newCategoryId) => {
+  initList(newCategoryId);
 },{immediate:true});
 
 
@@ -244,13 +287,20 @@ watch(() => route.query.categoryId, async (newCategoryId) => {
   <div class="about">
     <el-row :gutter="0">
       <el-col :span="18">
-        <ToolBar @handlecreat="buildNewfolder" @StoreChange="handleChange" />
+        <ToolBar
+         :isBulkOperation="isBulk" 
+         @handlecreat="buildNewfolder" 
+         @StoreChange="handleChange" 
+         @MultyDownload="fetchMuDownload"
+         @MultyDelete="fetchMuDelte"
+         @MultyMove="fetchMuMove"
+         />
       </el-col>
       <el-col :span="6">
         <el-input
           v-model="search"
           style="width: 240px"
-          placeholder="Pick a date"
+          placeholder="搜素全部文件"
         >
         <template #append>
           <el-icon @click="handlesearch(search)"><Search /></el-icon>
@@ -268,17 +318,20 @@ watch(() => route.query.categoryId, async (newCategoryId) => {
         @fetchMore="handleMore"
         @handleDelet="fetchDelete"
         @clicked="handleclicked"
-        @handleMultChoice="fetchMultChoice"
+        @handleMultChoice="getMultChoice"
         />
     </div>
-    <div class="preview" v-if="iframSrc" style="position: fixed;top: 0;left: 0; width: 100vw;height: 100vh;background: #000;">
-      <iframe
+    <div class="preview" v-if="isMoveFile">
+      <!-- <iframe
        :src="iframSrc"
        width="100%"
        height="100%"
-      ></iframe>
+      ></iframe> -->
+      <MoveFile 
+       @quite="quiteMove"
+       @moved="submitMove"
+      ></MoveFile>
     </div>
-    <!-- <FileDown></FileDown> -->
   </div>
 </template>
 
@@ -287,5 +340,17 @@ watch(() => route.query.categoryId, async (newCategoryId) => {
   height: 100%;
   display: flex;
   flex-direction: column;
+}
+.preview{
+  position: fixed;
+  display: flex;
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+  top: 0;
+  left: 0; 
+  width: 100vw;
+  height: 100vh;
+  background: rgb(239, 247, 253,0.5);
 }
 </style>

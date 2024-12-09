@@ -59,7 +59,6 @@ onMounted(async () => {
             isDeleted:true
         },true)
         detail.splice(0, detail.length, ...respon.data.list);
-        console.log(detail);
     } catch(e) {
         ElMessageBox.alert('登录过期请重新登录', e, {
         confirmButtonText: '确定',

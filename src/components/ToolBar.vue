@@ -1,10 +1,16 @@
 <script setup>
 import FileUp from '@/components/fileUorD/FileUp.vue';
-// import FileDown from '@/components/FileDown.vue';
 import FilesUp from '@/components/fileUorD/FilesUp.vue';
 import { useIdStore } from '@/stores/counter';
+import { Delete, Download, Sort } from '@element-plus/icons-vue';
 
-const emit = defineEmits(['handlecreat','StoreChange'])
+const emit = defineEmits(['handlecreat','StoreChange','MultyDelete','MultyMove','MultyDownload'])
+const props = defineProps({
+  isBulkOperation:{
+    type:Boolean,
+    default:true
+  }
+})
 const IdSotre = useIdStore();
 const handleCreat = () => {
     emit('handlecreat')
@@ -22,7 +28,9 @@ const StoreBack = () => {
 }
 </script>
 <template>
-    <el-row :gutter="20">
+  <div>
+    <!-- 上传，新建 -->
+    <el-row v-show="!props.isBulkOperation" :gutter="20">
       <el-col :span="6">
         <el-dropdown>
           <el-button type="primary">上传</el-button>
@@ -40,6 +48,18 @@ const StoreBack = () => {
       </el-col>
       <el-col :span="12" >
         <el-button v-if="IdSotre.openNewFlied" @click="handleCreat">新建文件夹</el-button>
+      </el-col>
+    </el-row>
+    <!-- 批量操作 -->
+    <el-row :gutter="20" v-show="props.isBulkOperation">
+      <el-col :span="3">
+        <el-button plain :icon="Download" @click="emit('MultyDownload')" >下载</el-button>
+      </el-col>
+      <el-col :span="3">
+        <el-button plain :icon="Delete" @click="emit('MultyDelete')">删除</el-button>
+      </el-col>
+      <el-col v-if="IdSotre.openNewFlied" :span="3">
+        <el-button plain :icon="Sort" @click="emit('MultyMove')">移动</el-button>
       </el-col>
     </el-row>
     <el-row style="padding: 10px 0;">
@@ -64,4 +84,5 @@ const StoreBack = () => {
 
       </el-col>
     </el-row>
+  </div>
 </template>

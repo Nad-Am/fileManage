@@ -20,7 +20,7 @@ myApi.interceptors.response.use(
     }
 );
 
-export const DoAxios = async (path, method, requestInfo, withToken) => {
+export const DoAxios = async (path, method, requestInfo, withToken,haveBody = false) => {
     const requestConfig = {
         url: path,
         method,
@@ -37,7 +37,7 @@ export const DoAxios = async (path, method, requestInfo, withToken) => {
         };
     }
 
-    if (['get', 'delete'].includes(method)) {
+    if (['get', 'delete'].includes(method) && !haveBody) {
         requestConfig['params'] = requestInfo;
     } else {
         requestConfig['data'] = requestInfo;
@@ -60,9 +60,9 @@ export const DoAxios = async (path, method, requestInfo, withToken) => {
 };
 
 
-export const DoAxiosWithErro = async (path, method, requestInfo, withToken) => {
+export const DoAxiosWithErro = async (path, method, requestInfo, withToken,hasBody = false) => {
     try{
-        const data = await DoAxios(path, method, requestInfo, withToken)
+        const data = await DoAxios(path, method, requestInfo, withToken,hasBody)
         return data;
     } catch (e) {
         ElMessage.error(e);

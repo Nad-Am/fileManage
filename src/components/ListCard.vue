@@ -27,14 +27,7 @@ const choiceLength = ref(0);
 
 
 
-const checkList = reactive(
-  pro.detail.map((item) => ({
-    isrecall: false,
-    ...item,
-    check: false,
-    hasmouse: false,
-  }))
-);
+const checkList = reactive([]);
 
 const handlenter = (e) => {
   e.hasmouse = true;
@@ -51,7 +44,7 @@ const handleAll = () => {
 };
 
 const handleclick = (e) => {
-  emits('clicked', e);
+  emits('clicked', e,checkList);
 };
 
 const handleRecall = (e) => {
@@ -146,7 +139,7 @@ const handleMore = () => {
   const clientHeight = scoll.value.clientHeight; // 可视区域高度
   // 判断是否接近底部，触发加载更多
   if (scrollTop + clientHeight >= scrollHeight - 10) {
-    emits('fetchMore',pro.detail.length);
+    emits('fetchMore',checkList.length,checkList);
   }
 }
 
@@ -159,15 +152,16 @@ watch(
   (newVal) => {
     const rawList = toRaw(newVal);
     const choiceList = rawList.filter(item => item.check);
-    checkAll.value = choiceLength.value === newVal.length;
-    indeter.value = choiceList.length != 0 && !checkAll.value;
+
     if(choiceList.length != choiceLength.value) {
-      console.log(choiceList);
       emits('handleMultChoice',choiceList);
     }
+    
     choiceLength.value = choiceList.length;
+    checkAll.value = choiceLength.value === newVal.length;
+    indeter.value = choiceList.length != 0 && !checkAll.value;
   },
-  { deep: true }
+  {deep: true }
 );
 
 watch(
@@ -193,6 +187,8 @@ watch(
 
 <template>
   <div style="position: relative;">
+
+    <!-- 描述栏显示区 -->
     <el-row :gutter="10" style="padding: 10px; min-width: 700px;">
       <el-col :span="0.5">
         <el-checkbox
@@ -213,7 +209,11 @@ watch(
       :style="{filter:isload ? 'blur(3px)':''}"
       style="height: 70vh;overflow: auto;min-width: 700px;scrollbar-width: none;"
     >
-    <el-empty v-show="detail.length ===0" description="description" />
+
+    <!-- List为空显示区 -->
+    <el-empty v-show="detail.length ===0" description="还没有任何文件哦，上传一个吧" />
+
+    <!-- List Card -->
       <el-row 
         class="el-row-dom"
         v-for="(item, index) in checkList" 
@@ -226,13 +226,18 @@ watch(
         <el-col :span="0.5">
           <el-checkbox v-model="item.check" :value="item.id"></el-checkbox>
         </el-col>
+        <!-- name功能区 -->
         <el-col :span="6" style="min-width: 270px;">
+
+          <!-- name显示区域 -->
           <el-row @click="handleclick(item)" v-show="!item.isrecall" style="flex-wrap: nowrap;">
             <el-icon size="20" style="margin: 5px 5px;">
               <component :is="getIconComponent(item.categoryId)"></component>
             </el-icon>
             <div style="min-width: 200px; white-space: nowrap; overflow: hidden;text-overflow: ellipsis" class="name">{{ item.name }}</div>
           </el-row>
+
+          <!-- rename的input框 -->
           <el-row style="min-width: 270px;" v-show="item.isrecall">
             <el-icon size="20" style="margin: 5px 5px;">
               <component :is="getIconComponent(item.categoryId)"></component>
@@ -242,7 +247,11 @@ watch(
             <el-button @click="handlequit(item)" type="danger" circle icon="Close" size="small"></el-button>
           </el-row>
         </el-col>
+
+        <!-- update Time显示区 -->
         <el-col v-show="!item.hasmouse || item.isrecall" :span="8" style="padding-left: 100px; min-width: 250px;">{{ item.updatedTime }}</el-col>
+
+        <!-- List增删改查功能区 -->
         <el-col v-show="item.hasmouse && !item.isrecall" :span="8">
           <el-tooltip
             content="下载"
@@ -269,10 +278,16 @@ watch(
             <el-icon style="margin:0 10px; cursor: pointer;" color="rgba(51, 191, 240)"><MoreFilled /></el-icon>
           </el-tooltip>
         </el-col>
+
+        <!-- type显示区 -->
         <el-col :span="4">{{ getType(item.categoryId) }}</el-col>
       </el-row>
+
+      <!-- 加载更多加载块 -->
       <div style="width: 100%; height: 30px;" v-loading="pro.isfetching"></div>
     </div>
+
+    <!-- 下载进度监控条 -->
     <div class="progress" :style="{display:isload ? '':'none'}">
         <div class="inpro">
           <el-progress
@@ -285,7 +300,7 @@ watch(
           ></el-progress>
           <div style="text-align: center;margin: 5px;">下载中...</div>
         </div>
-      </div>
+    </div>
   </div>
 </template>
 

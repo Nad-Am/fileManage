@@ -1,7 +1,6 @@
 <script setup>
 import Menue from '@/components/MeNue.vue';
 import { useRouter} from 'vue-router';
-import { Search } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user';
 import { ElMessageBox, ElMessage } from 'element-plus';
 
@@ -25,7 +24,7 @@ const logout = () => {
 
 <template>
   <div class="common-layout">
-    <el-container class="el-con">
+    <el-container style="min-width: 1300px;" class="el-con">
       <el-header>
         <el-row>
           <el-col :span="0.5" style="margin: auto">
@@ -40,12 +39,12 @@ const logout = () => {
           </el-col>
         </el-row>
       </el-header>
-      <el-main >
+      <el-main>
         <el-container>
           <el-aside width="250px">
             <Menue></Menue>
           </el-aside>
-          <el-main style="width: 85vh; min-width: 500px;padding: 0;scrollbar-width: none;">
+          <el-main style="width: 85vh;padding: 0;scrollbar-width: none;">
             <router-view></router-view>
           </el-main>
         </el-container>
