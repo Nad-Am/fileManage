@@ -277,6 +277,16 @@ const submitMove = async (parentId)=> {
     newParentId:parentId
   },true,false)
   isMoveFile.value = false;
+
+  const nowId = IdStore.getNow().id;
+  if(nowId === '') {
+    initList('');
+  } else {
+    handleclicked({
+      id:nowId,
+      folder:true
+    })
+  }
 }
 
 const fetchMuDownload = async () => {

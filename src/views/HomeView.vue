@@ -20,6 +20,8 @@ const logout = () => {
   })
 }
 
+
+
 </script>
 
 <template>
@@ -33,7 +35,7 @@ const logout = () => {
               src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"
             />
           </el-col>
-          <el-col :span="20" style="margin: auto 0; font-weight: bolder;">{{ userStore.useInfo.username }}</el-col>
+          <el-col :span="20" style="margin: auto 0; font-weight: bolder;">{{ userStore.userName }}</el-col>
           <el-col :span="2" style="margin:auto">
             <el-button type="primary" @click="logout">退出登录</el-button>
           </el-col>

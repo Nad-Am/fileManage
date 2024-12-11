@@ -1,17 +1,19 @@
 <script setup>
-import { watch, ref, reactive, onMounted} from 'vue';
-import { DoAxios,DoAxiosWithErro } from '@/api';
+import { watch, ref, reactive, onMounted,computed, toRaw} from 'vue';
+import { DoAxiosWithErro } from '@/api';
 import { ElMessageBox } from 'element-plus';
 import { useRouter } from 'vue-router';
-import { useUserStore } from '@/stores/user';
+// import { useUserStore } from '@/stores/user';
 
 const detail = reactive([]);
-const userStore = useUserStore();
+// const userStore = useUserStore();
 const router = useRouter();
 const defdetail = reactive(detail.map(item => ({...item,check:false,hasmous:false})));
+const checkList = reactive([]);
 const checkAll = ref(false);
 const indeter = ref(false);
 const isfetching = ref(false);
+const isMulty = computed(()=> checkAll.value || indeter.value);
 
 
 const handleenter = (e) => {
@@ -42,9 +44,27 @@ const handleRefesh = async (e) => {
     isfetching.value = false;
 }
 
+const MultyRefesh = async () => {
+    await DoAxiosWithErro('/api/files/recycle/restoreBatch','put',{
+        fileIds:checkList
+    },true);
+    const nowlist = defdetail.filter(i => !checkList.includes(i.id));
+    defdetail.splice(0,defdetail.length,...nowlist);
+}
+
+const MultyDelet = async () => {
+    await DoAxiosWithErro('/api/files/deleteBatch','post',{
+        fileIds:checkList
+    },true,true);
+    const nowlist = defdetail.filter(i => !checkList.includes(i.id));
+    defdetail.splice(0,defdetail.length,...nowlist);
+}
+
 watch(defdetail,(newvalue) => {
-    checkAll.value = newvalue.every(i => i.check);
-    indeter.value = newvalue.some(i => i.check) && !checkAll.value;
+    const rawList = toRaw(newvalue.filter(i => i.check));
+    checkList.splice(0,checkList.length,...rawList.map(i => i.id));
+    checkAll.value = rawList.length === newvalue.length;
+    indeter.value = rawList.length !== 0 && !checkAll.value;
 })
 
 onMounted(async () => {
@@ -75,10 +95,26 @@ onMounted(async () => {
 <template>
     <el-container>
         <el-header height="30px">
-            <el-button type="primary" round>
-                <el-icon style="margin: 3px;"><Delete /></el-icon>
-                清空回收站
-            </el-button>
+           <el-row>
+            <el-col :span="3">
+                <el-button type="primary" round>
+                    <el-icon style="margin: 3px;"><Delete /></el-icon>
+                    清空回收站
+                </el-button>
+            </el-col>
+            <el-col v-show="isMulty" :span="2">
+                <el-button @click="MultyRefesh" round>
+                    <el-icon><Refresh /></el-icon>
+                    还原
+                </el-button>
+            </el-col>
+            <el-col v-show="isMulty" :span="2">
+                <el-button @click="MultyDelet" round>
+                    <el-icon><Delete /></el-icon>
+                    彻底删除
+                </el-button>
+            </el-col>
+           </el-row>
         </el-header>
         <el-main>
             <el-row>回收站</el-row>
@@ -104,7 +140,7 @@ onMounted(async () => {
                 >
                     <el-col style="min-width: 100px; overflow: hidden; text-overflow: ellipsis; flex-wrap: nowrap; text-wrap: nowrap;" :span="8" class="name">
                         <el-checkbox  v-model="item.check" :value="item.name"></el-checkbox>
-                        <el-icon color="yellow" size="25px"><WalletFilled /></el-icon>
+                        <el-icon  size="21px"><WalletFilled /></el-icon>
                         {{ item.name }}
                     </el-col>
                     <el-col v-show="!item.hasmous" :span="6">{{ item.updatedTime }}</el-col>
@@ -124,11 +160,10 @@ onMounted(async () => {
                         </el-tooltip>
                     </el-col>
                 </el-row>
-            </div>
-            <div style="width: 100%; height: 100%;">
+
                 <el-empty 
                 v-show="defdetail.length ===0" 
-                description="还没有任何文件哦，上传一个吧"
+                description="回收站为空哦"
                 />
             </div>
         </el-main>

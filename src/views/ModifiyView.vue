@@ -45,21 +45,29 @@ import debounce from '@/utils/debounce';
 
 </script>
 <template>
-    <el-form
-        ref="formRef"
-        :model="formInfo"
-        :rules="rule"
-        style="width: 70%;"
-    >
-        <el-form-item label="旧密码" prop="oldpass">
-            <el-input autocomplete="off" type="password" show-password v-model="formInfo.oldpass"></el-input>
-        </el-form-item>
-        <el-form-item label="新密码" prop="newpass">
-            <el-input autocomplete="off" type="password" show-password v-model="formInfo.newpass"></el-input>
-        </el-form-item>
-        <el-form-item>
-            <el-button @click="handleconfirm">确认修改</el-button>
-            <el-button @click="hanlecancle">取消修改</el-button>
-        </el-form-item>
-    </el-form>
+    <div>
+        <div style="height: 100px; width: 100px;">
+        <el-avatar
+            :size="80"
+            src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"
+        />
+        </div>
+        <el-form
+            ref="formRef"
+            :model="formInfo"
+            :rules="rule"
+            style="width: 70%;"
+        >
+            <el-form-item label="旧密码" prop="oldpass">
+                <input type="password" show-password v-model="formInfo.oldpass"></input>
+            </el-form-item>
+            <el-form-item label="新密码" prop="newpass">
+                <el-input autocomplete="off" type="password" show-password v-model="formInfo.newpass"></el-input>
+            </el-form-item>
+            <el-form-item>
+                <el-button @click="handleconfirm">确认修改</el-button>
+                <el-button @click="hanlecancle">取消修改</el-button>
+            </el-form-item>
+        </el-form>
+    </div>
 </template>

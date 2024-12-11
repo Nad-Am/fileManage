@@ -25,7 +25,6 @@ const handleLogin = async () => {
     const userInfo = {account:form.name,password:form.password};
     logining.value = true;
     await userstor.login(userInfo);
-    console.log(userstor.useInfo);
     router.push('/home')
   } catch(e) {
     console.log(e);

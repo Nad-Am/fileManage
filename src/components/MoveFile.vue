@@ -14,7 +14,7 @@ import { useUserStore } from '@/stores/user';
             {
                 id:'',
                 name:'全部文件',
-                path:userStore.useInfo.username + '/'
+                path:userStore.userInfo.username
             }
         ]
     });
@@ -62,7 +62,7 @@ import { useUserStore } from '@/stores/user';
     } 
 
     onMounted(async ()=> {
-        getNowList()
+       await getNowList();
     })
 </script>
 <template>
