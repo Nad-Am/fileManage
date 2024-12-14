@@ -6,7 +6,6 @@ import { ElMessageBox, ElMessage } from 'element-plus';
 
 const userStore = useUserStore();
 const router = useRouter();
-
 const logout = () => {
   ElMessageBox.alert('确定退出登录吗','退出',{
     confirmButtonText:"OK"
@@ -19,9 +18,6 @@ const logout = () => {
     router.push('/');
   })
 }
-
-
-
 </script>
 
 <template>
@@ -32,7 +28,7 @@ const logout = () => {
           <el-col :span="0.5" style="margin: auto">
             <el-avatar
               :size="50"
-              src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"
+              :src="userStore.userInfo.avatar"
             />
           </el-col>
           <el-col :span="20" style="margin: auto 0; font-weight: bolder;">{{ userStore.userName }}</el-col>

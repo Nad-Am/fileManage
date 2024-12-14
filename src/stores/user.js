@@ -1,9 +1,8 @@
 import { defineStore } from "pinia";
 import { DoAxiosWithErro } from "@/api";
-import { toRaw } from "vue";
 export const useUserStore =  defineStore('user',{
     state:() => ({
-        userInfo:JSON.parse(localStorage.getItem('useInfo')) || null,
+        userInfo:JSON.parse(localStorage.getItem('useInfo')) || {},
         userToken: localStorage.getItem('userToken') || '',
         isLoggedIn:false
     }),
@@ -15,12 +14,19 @@ export const useUserStore =  defineStore('user',{
       // 3. 定义 actions
       actions: {
         async login(userData) {
+              const Info = {};
               const data = await DoAxiosWithErro('/api/users/login','post',userData,false);
               this.userToken = data.data.saTokenInfo.tokenValue;
 
-              this.userInfo = data.data;
+              Info.username = data.data.username;
               localStorage.setItem('userToken', this.userToken);
-              const infoJSON = JSON.stringify(toRaw(this.userInfo))
+              const formdata = new FormData();
+              formdata.append('isChange',false);
+              formdata.append('avatar','');
+              const respon = await DoAxiosWithErro('/api/users/avatar','post',formdata,true);
+              Info.avatar = respon.data;
+              this.userInfo = Info;
+              const infoJSON = JSON.stringify(Info);
               localStorage.setItem('useInfo',infoJSON);
               // console.log(infoJSON,'and',localStorage.getItem('useInfo'));
         },

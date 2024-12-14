@@ -26,9 +26,7 @@ const handleLogin = async () => {
     logining.value = true;
     await userstor.login(userInfo);
     router.push('/home')
-  } catch(e) {
-    console.log(e);
-  } finally {
+  }  finally {
     logining.value = false;
   }
   
@@ -42,7 +40,7 @@ const handleLogin = async () => {
                 <el-input v-model="form.name" />
             </el-form-item>
             <el-form-item label="密码" prop="pass">
-                <el-input v-model="form.password" type="password" />
+                <el-input show-password v-model="form.password" type="password" />
             </el-form-item>
             <div class="button">
                 <el-button :disabled="logining" @click="handleLogin" class="sub" type="primary" :loading="false">

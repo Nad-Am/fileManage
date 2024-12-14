@@ -4,13 +4,15 @@ import ListCard from '@/components/ListCard.vue';
 import ToolBar from '@/components/ToolBar.vue';
 import MoveFile from '@/components/MoveFile.vue';
 import PreView from '@/components/PreView.vue';
+import ProgressBar from '@/components/ProgressBar.vue';
 
 import { useRouter, useRoute } from 'vue-router';
 import {  DoAxiosWithErro} from '@/api';
-import { reactive, ref, watch} from 'vue';  // 引入 watch
+import { reactive, ref, watch, nextTick} from 'vue';  // 引入 watch
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { catrgoryConfig } from '@/utils/typeDefin';
 import { useIdStore } from '@/stores/counter';
+import { useDownloadFile } from '@/utils/useDownLoadFile';
 
 // 初始化数据
 const iframSrc = ref('');
@@ -20,12 +22,14 @@ const search = ref('');
 const total = ref(0);
 const pageNo = ref(1);
 const MultyList = reactive([]);
+const progress = ref(0);
 
 const recalling = ref(false);
 const isloading = ref(true);
 const isfetchmore = ref(false);
 const isBulk = ref(false);
-const isMoveFile = ref(false)
+const isMoveFile = ref(false);
+const isDownloading = ref(false);
 
 const router = useRouter();
 const route = useRoute();
@@ -245,8 +249,7 @@ const getMultChoice = (list) => {
     isBulk.value = false;
     return
   }
-  const IdList = list.map(item => item.id);
-  MultyList.splice(0,MultyList.length,...IdList);
+  MultyList.splice(0,MultyList.length,...list);
   isBulk.value = true;
 }
 
@@ -289,11 +292,41 @@ const submitMove = async (parentId)=> {
   }
 }
 
-const fetchMuDownload = async () => {
-  console.log(MultyList);
+const fetchMuDownload = async (e) => {
+  // console.log(MultyList);
+  if(!e) {
+    console.log("BarTriger");
+  } else {
+    console.log("Click",e);
+  }
+  const list = e ? e : MultyList;
+  for (const i of list) {
+    isDownloading.value = false
+    await useDownloadFile(i.id, i.name, updataProgress);
+  }
+}
+const updataProgress = (newProgress) => {
+  if(newProgress === -1) {
+    isDownloading.value = false;
+    return
+  }
+  if(newProgress === -2) {
+    isloading.value = true
+  } else {
+    isloading.value = false
+  }
+  progress.value = newProgress;
+  if(newProgress >= 99) {
+    isDownloading.value = false;
+    return
+  }
+  if(newProgress >= 0) {
+    isDownloading.value = true;
+    return
+  }
 }
 
-const PreQuite = () => {
+const PreViewQuite = () => {
   iframSrc.value = '';
 }
 
@@ -340,13 +373,14 @@ watch(() => route.query.categoryId, (newCategoryId) => {
         @fetchMore="handleMore"
         @handleDelet="fetchDelete"
         @clicked="handleclicked"
+        @handleLoad="fetchMuDownload"
         @handleMultChoice="getMultChoice"
         />
     </div>
-    <div class="preview" v-if="isMoveFile || iframSrc!== ''">
+    <div class="preview" v-if="isMoveFile || iframSrc!== '' || isDownloading">
       <PreView
       v-if="iframSrc !== ''"
-      @quite="PreQuite"
+      @quite="PreViewQuite"
       :ifram-src="iframSrc"
       ></PreView>
       <MoveFile 
@@ -354,6 +388,7 @@ watch(() => route.query.categoryId, (newCategoryId) => {
        @quite="quiteMove"
        @moved="submitMove"
       ></MoveFile>
+      <ProgressBar v-if="isDownloading" :progress="progress"></ProgressBar>
     </div>
   </div>
 </template>

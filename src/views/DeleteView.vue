@@ -45,19 +45,23 @@ const handleRefesh = async (e) => {
 }
 
 const MultyRefesh = async () => {
+    isfetching.value = true;
     await DoAxiosWithErro('/api/files/recycle/restoreBatch','put',{
         fileIds:checkList
     },true);
     const nowlist = defdetail.filter(i => !checkList.includes(i.id));
     defdetail.splice(0,defdetail.length,...nowlist);
+    isfetching.value = false;
 }
 
 const MultyDelet = async () => {
+    isfetching.value = true
     await DoAxiosWithErro('/api/files/deleteBatch','post',{
         fileIds:checkList
     },true,true);
     const nowlist = defdetail.filter(i => !checkList.includes(i.id));
     defdetail.splice(0,defdetail.length,...nowlist);
+    isfetching.value = false
 }
 
 watch(defdetail,(newvalue) => {

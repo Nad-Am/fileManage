@@ -20,7 +20,6 @@ const checkAll = ref(false);
 const indeter = ref(false);
 const scoll = ref(null);
 const recallinput = ref('');
-const isload = ref(false);
 const progress = ref(0);
 const choiceLength = ref(0);
 
@@ -74,16 +73,18 @@ const handleRecalled = (e) => {
 };
 
 const handleLoad = async (id,name) => {
-  await useDownloadFile(id,name,onProgress);
+  // await useDownloadFile(id,name,onProgress);
+  const e = [{id,name}];
+  emits('handleLoad',e);
 };
 
-const onProgress = (updateProgress) => {
-  isload.value = true;
-  progress.value = updateProgress;
-  if(progress.value === '100.00') {
-    isload.value = false;
-  }
-}
+// const onProgress = (updateProgress) => {
+//   isload.value = true;
+//   progress.value = updateProgress;
+//   if(progress.value === '100.00') {
+//     isload.value = false;
+//   }
+// }
 
 const getIconComponent = (categoryId) => {
   if(categoryId === 0) {
@@ -205,7 +206,6 @@ watch(
     <div 
       ref="scoll" 
       @scroll="handleMore"
-      :style="{filter:isload ? 'blur(3px)':''}"
       style="height: 70vh;overflow: auto;min-width: 700px;scrollbar-width: none;"
     >
 
@@ -285,21 +285,6 @@ watch(
       <!-- 加载更多加载块 -->
       <div style="width: 100%; height: 30px;" v-loading="pro.isfetching"></div>
     </div>
-
-    <!-- 下载进度监控条 -->
-    <div class="progress" :style="{display:isload ? '':'none'}">
-        <div class="inpro">
-          <el-progress
-          :stroke-width="15"
-          :percentage="Number(progress)"
-          :text-inside="true"
-          striped
-          striped-flow
-          :duration="10"
-          ></el-progress>
-          <div style="text-align: center;margin: 5px;">下载中...</div>
-        </div>
-    </div>
   </div>
 </template>
 
@@ -310,20 +295,5 @@ watch(
 .name:hover{
 cursor: pointer;
   color: rgba(51, 191, 240);
-}
-.progress{
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  top: 0;
-  left: 0;
-  .inpro{
-    width: 50%;
-    position: absolute;
-    top: 35%;
-    left: 40%;
-    transform: translate(-50%,-50%);
-  }
-  
 }
 </style>
