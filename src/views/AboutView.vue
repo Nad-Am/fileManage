@@ -8,7 +8,7 @@ import ProgressBar from '@/components/ProgressBar.vue';
 
 import { useRouter, useRoute } from 'vue-router';
 import {  DoAxiosWithErro} from '@/api';
-import { reactive, ref, watch, nextTick} from 'vue';  // 引入 watch
+import { reactive, ref, watch} from 'vue';  // 引入 watch
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { catrgoryConfig } from '@/utils/typeDefin';
 import { useIdStore } from '@/stores/counter';
@@ -254,17 +254,16 @@ const getMultChoice = (list) => {
 }
 
 const fetchMuDelte = async () => {
+  const list = MultyList.map(i => i.id);
    await DoAxiosWithErro(
     '/api/files/recycle/deleteBatch',
     'put',
-    {fileIds:MultyList},
+    {fileIds:list},
     true,true);
 
-    const newdata = data.filter(i => !MultyList.includes(i.id));
-    console.log(newdata);
+    const newdata = data.filter(i => !list.includes(i.id));
     MultyList.splice(0,MultyList.length);
     data.splice(0,data.length,...newdata);
-    console.log('end',data);
 }
 
 const fetchMuMove = async () => {
@@ -274,9 +273,9 @@ const quiteMove = () => {
   isMoveFile.value = false;
 }
 const submitMove = async (parentId)=> {
-  console.log(IdStore.getNow())
+  const list = MultyList.map(i => i.id);
   await DoAxiosWithErro('/api/files/moveBatch','put',{
-    fileIds:MultyList,
+    fileIds:list,
     newParentId:parentId
   },true,false)
   isMoveFile.value = false;
