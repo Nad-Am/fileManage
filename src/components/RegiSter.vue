@@ -59,20 +59,41 @@ const checkName = (rule,value,callback) => {
   if(!value) {
    return callback(new Error("请输入昵称"))
   }
-  callback();
+  DoAxios('/api/users/IsExists','get',{
+    type:'username',
+    value
+  }).catch(rject => {
+    callback(rject);
+  })
 }
 
-const checkEmail = (rule,value, callback)=> {
-  const reg = /^[0-9A-Za-z._%]+@[a-zA-Z0-9._-]+\.[a-zA-Z]{2,}$/
-  if(!value) {
-    return callback(new Error("请输入绑定邮箱"))
-  } else {
-    if(!reg.test(value)){
-     return callback(new Error("请输入正确的邮箱地址"))
-    }
+const checkEmail = (rule, value, callback) => {
+  const reg = /^[0-9A-Za-z._%]+@[a-zA-Z0-9._-]+\.[a-zA-Z]{2,}$/;
+
+  // 如果没有输入值，提示“请输入绑定邮箱”
+  if (!value) {
+    return callback(new Error("请输入绑定邮箱"));
   }
+
+  // 如果邮箱格式不正确，提示“请输入正确的邮箱地址”
+  if (!reg.test(value)) {
+    return callback(new Error("请输入正确的邮箱地址"));
+  }
+
+  // 异步请求，检查邮箱是否已注册
+  DoAxios('/api/users/IsExists', 'get', {
+    type: 'email',
+    value
+  })
+  .catch(err => {
+    callback(err);
+  })
   callback();
-}
+};
+
+
+
+
 
 const checkCode = (rule,value,callback) => {
   if(value === '') {
@@ -111,7 +132,7 @@ const validatePass2 = (rule, value, callback) => {
 const rules = reactive({
   pass: [{ validator: validatePass, trigger: 'change' }],
   checkPass: [{ validator: validatePass2, trigger: 'change' }],
-  name: [{validator: checkName, trigger:"blur"}],
+  name: [{validator: checkName, trigger:"change"}],
   email:[{validator:checkEmail,trigger:"change"}],
   checkcode:[{validator:checkCode,trigger:'change'}]
 })
