@@ -88,7 +88,6 @@ const checkEmail = (rule, value, callback) => {
   .catch(err => {
     callback(err);
   })
-  callback();
 };
 
 
