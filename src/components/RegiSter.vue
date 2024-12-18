@@ -28,6 +28,7 @@ const handleturn = () => {
 
 const handleSend = async () => {
   const fromData = new FormData();
+  sendButton.disable = true;
   try{
     fromData.append('to',ruleForm.email)
     const response = await DoAxios('/api/users/email','post',fromData,false);
@@ -48,6 +49,7 @@ const handleSend = async () => {
       }
     },1000);
   } catch(e){
+    sendButton.disable = false;
     ElMessage({
       message:e,
       type:'error'
@@ -62,6 +64,8 @@ const checkName = (rule,value,callback) => {
   DoAxios('/api/users/IsExists','get',{
     type:'username',
     value
+  }).then(()=> {
+    callback();
   }).catch(rject => {
     callback(rject);
   })
@@ -84,6 +88,9 @@ const checkEmail = (rule, value, callback) => {
   DoAxios('/api/users/IsExists', 'get', {
     type: 'email',
     value
+  })
+  .then(()=>{
+    callback();
   })
   .catch(err => {
     callback(err);
@@ -131,8 +138,8 @@ const validatePass2 = (rule, value, callback) => {
 const rules = reactive({
   pass: [{ validator: validatePass, trigger: 'change' }],
   checkPass: [{ validator: validatePass2, trigger: 'change' }],
-  name: [{validator: checkName, trigger:"change"}],
-  email:[{validator:checkEmail,trigger:"change"}],
+  name: [{validator: checkName, trigger:"blur"}],
+  email:[{validator:checkEmail,trigger:"blur"}],
   checkcode:[{validator:checkCode,trigger:'change'}]
 })
 
@@ -170,24 +177,26 @@ const resetForm = (formEl) => {
 
 const sendMessage = async () => {
   const formEl = ruleFormRef.value;
-  const validateList = ['pass', 'checkPass', 'name', 'email'];
+  const validateList = ['email','name'];
 
-  // 使用 Promise.all 来处理所有的验证
   const validationPromises = validateList.map(item => {
     return new Promise((resolve, reject) => {
       formEl.validateField(item, (validata) => {
+        console.log(validata); // 打印验证结果
         if (validata) {
-          resolve(true); // 如果验证通过，resolve
+          resolve(true);
         } else {
-          reject(false); // 如果验证失败，reject
+          reject(false);
         }
       });
     });
   });
-    // 等待所有字段验证完成
-    await Promise.all(validationPromises);
-    handleSend(); // 验证通过后发送消息
+
+  Promise.all(validationPromises).then(() => {
+    handleSend();  // 验证通过后发送消息
+  })
 };
+
 
 </script>
 
@@ -223,7 +232,7 @@ const sendMessage = async () => {
       <el-form-item class="checkcode" label="checkcode" prop="checkcode">
         <el-input class="code"  v-model="ruleForm.checkcode" autocomplete="off" />
         <el-button class="but" @click="sendMessage" :disabled="sendButton.disable">
-          <span v-show="sendButton.disable">{{ sendButton.refresh }}秒后</span>
+          <span v-show="sendButton.disable && sendButton.refresh">{{ sendButton.refresh }}秒后</span>
           {{ sendButton.value }}
         </el-button>
       </el-form-item>
@@ -264,7 +273,7 @@ const sendMessage = async () => {
   .checkcode{
     .but{
       position: absolute;
-      right: 6rem;
+      right: 5rem;
     }
     .code{
       width: 200px;
