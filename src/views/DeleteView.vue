@@ -64,6 +64,17 @@ const MultyDelet = async () => {
     isfetching.value = false
 }
 
+const handleDeletAll = async () => {
+    const list = defdetail.map(i=>i.id);
+    if(!list.length) return
+    isfetching.value = true
+    await DoAxiosWithErro('/api/files/deleteBatch','post',{
+        fileIds:list
+    },true,true);
+    defdetail.splice(0,defdetail.length);
+    isfetching.value = false;
+}
+
 watch(defdetail,(newvalue) => {
     const rawList = toRaw(newvalue.filter(i => i.check));
     checkList.splice(0,checkList.length,...rawList.map(i => i.id));
@@ -101,7 +112,7 @@ onMounted(async () => {
         <el-header height="30px">
            <el-row>
             <el-col :span="3">
-                <el-button type="primary" round>
+                <el-button @click="handleDeletAll" type="primary" round>
                     <el-icon style="margin: 3px;"><Delete /></el-icon>
                     清空回收站
                 </el-button>
